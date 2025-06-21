@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 
 import '../utils/save_results.dart';
 
@@ -82,7 +83,6 @@ class ScanService {
     var current = 0;
 
     final httprobe = await Process.start('httprobe', [], runInShell: true);
-
     for (final sub in allSubdomains) {
       httprobe.stdin.writeln(sub);
     }
@@ -109,7 +109,44 @@ class ScanService {
       '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
     );
 
-    await saveResults(allSubdomains, allSubdomains.toSet(), active);
+    final scanDir = await saveResults(
+      allSubdomains,
+      allSubdomains.toSet(),
+      active,
+    );
+
+    // gowitness
+    if (active.isNotEmpty) {
+      final gowitnessDir = Directory(p.join(scanDir.path, 'gowitness'));
+      if (!await gowitnessDir.exists()) {
+        await gowitnessDir.create(recursive: true);
+      }
+
+      final gowitnessCommand = [
+        'gowitness',
+        'single',
+        '--disable-db',
+        '--destination',
+        gowitnessDir.path,
+        ...active,
+      ];
+
+      onLog?.call(
+        '[*] Executando gowitness com comando: ${gowitnessCommand.join(' ')}',
+      );
+
+      final result = await Process.run(
+        gowitnessCommand.first,
+        gowitnessCommand.sublist(1),
+        runInShell: true,
+      );
+
+      if (result.exitCode == 0) {
+        onLog?.call('[+] gowitness finalizado com sucesso.');
+      } else {
+        onLog?.call('[-] gowitness encontrou erro: ${result.stderr}');
+      }
+    }
 
     return (allSubdomains, active.toList());
   }

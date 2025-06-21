@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
-Future<void> saveResults(
+Future<Directory> saveResults(
   Set<String> total,
   Set<String> unique,
   Set<String> active,
@@ -30,4 +30,6 @@ Future<void> saveResults(
   await File(
     p.join(scanDir.path, 'subdominios_unicos_ativos.txt'),
   ).writeAsString(active.join('\n'));
+
+  return scanDir;
 }
