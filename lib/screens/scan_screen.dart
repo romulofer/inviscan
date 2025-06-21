@@ -41,6 +41,23 @@ class ScanScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                 ],
+                if (model.isRunningHttprobe &&
+                    model.httprobeProgress != null) ...[
+                  const Text(
+                    'Verificando com httprobe...',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: model.httprobeProgress!,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.deepPurple,
+                    ),
+                    minHeight: 8,
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 if (!model.isLoading)
                   const Text(
                     'Log de execução:',

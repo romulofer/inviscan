@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:inviscan/utils/save_results.dart';
+
+import '../utils/save_results.dart';
 
 class ScanService {
-  Future<(Set<String>, List<String>, List<String>)> scanDomain(
+  Future<(Set<String>, List<String>)> scanDomainWithProgress(
     String domain, {
     void Function(String log)? onLog,
+    void Function()? onHttprobeStart,
+    void Function(int current, int total)? onHttprobeProgress,
+    void Function()? onHttprobeEnd,
   }) async {
     final Set<String> allSubdomains = {};
     final Set<String> active = {};
-
     final baseDomain = domain.trim();
 
     Future<int> runCommand(
@@ -17,11 +20,8 @@ class ScanService {
       List<String> args,
       Set<String> accumulator,
     ) async {
-      onLog?.call('[*] Executando $name com comando: $name ${args.join(' ')}');
-
-      final before = accumulator.length;
+      onLog?.call('[*] Executando $name...');
       final process = await Process.start(name, args, runInShell: true);
-
       await for (var line in process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())) {
@@ -30,13 +30,11 @@ class ScanService {
           accumulator.add(value);
         }
       }
-
       final exitCode = await process.exitCode;
       if (exitCode != 0) {
         onLog?.call('[-] $name terminou com erro (código $exitCode).');
       }
-
-      return accumulator.length - before;
+      return accumulator.length;
     }
 
     // subfinder
@@ -53,7 +51,7 @@ class ScanService {
     ], allSubdomains);
     onLog?.call('[+] assetfinder encontrou $assetfinderCount subdomínios.');
 
-    // crt.sh
+    // crt.sh via HTML
     onLog?.call('[*] Consultando crt.sh...');
     final crtsh = await Process.run('bash', [
       '-c',
@@ -67,16 +65,20 @@ class ScanService {
               .map((m) => m.group(1)!)
               .where((e) => e.contains(baseDomain))
               .toSet();
-
       allSubdomains.addAll(matches);
       onLog?.call('[+] crt.sh encontrou ${matches.length} subdomínios.');
     } else {
       onLog?.call('[-] Erro ao consultar crt.sh');
     }
 
-    // httprobe
     onLog?.call('[*] Iniciando verificação com httprobe...');
+    onHttprobeStart?.call();
+
+    final total = allSubdomains.length;
+    var current = 0;
+
     final httprobe = await Process.start('httprobe', [], runInShell: true);
+
     for (final sub in allSubdomains) {
       httprobe.stdin.writeln(sub);
     }
@@ -89,9 +91,13 @@ class ScanService {
       if (url.isNotEmpty) {
         active.add(url);
       }
+      current++;
+      onHttprobeProgress?.call(current, total);
     }
 
     await httprobe.exitCode;
+    onHttprobeEnd?.call();
+
     onLog?.call(
       '[+] httprobe identificou ${active.length} subdomínios ativos.',
     );
@@ -100,6 +106,7 @@ class ScanService {
     );
 
     await saveResults(allSubdomains, allSubdomains.toSet(), active);
-    return (allSubdomains, <String>[], active.toList());
+
+    return (allSubdomains, active.toList());
   }
 }
