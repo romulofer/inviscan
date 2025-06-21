@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,13 +17,9 @@ class _HomeScreenState extends State<HomeScreen> {
       '',
     );
     if (url.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Você digitou a url: $url'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      _urlTextController.clear();
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => ScanScreen(domain: url)));
     }
   }
 
