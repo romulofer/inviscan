@@ -20,8 +20,10 @@ class ScanService {
       List<String> args,
       Set<String> accumulator,
     ) async {
-      onLog?.call('[*] Executando $name...');
+      final fullCommand = '$name ${args.join(' ')}';
+      onLog?.call('[*] Executando $name com comando: $fullCommand');
       final process = await Process.start(name, args, runInShell: true);
+
       await for (var line in process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())) {
@@ -30,6 +32,7 @@ class ScanService {
           accumulator.add(value);
         }
       }
+
       final exitCode = await process.exitCode;
       if (exitCode != 0) {
         onLog?.call('[-] $name terminou com erro (código $exitCode).');
@@ -52,11 +55,11 @@ class ScanService {
     onLog?.call('[+] assetfinder encontrou $assetfinderCount subdomínios.');
 
     // crt.sh via HTML
-    onLog?.call('[*] Consultando crt.sh...');
-    final crtsh = await Process.run('bash', [
-      '-c',
-      'curl -s "https://crt.sh/?q=%25.$baseDomain&exclude=expired"',
-    ]);
+    final crtshCommand =
+        'curl -s "https://crt.sh/?q=%25.$baseDomain&exclude=expired"';
+    onLog?.call('[*] Executando consulta ao crt.sh com comando: $crtshCommand');
+
+    final crtsh = await Process.run('bash', ['-c', crtshCommand]);
 
     if (crtsh.exitCode == 0) {
       final matches =
@@ -71,6 +74,7 @@ class ScanService {
       onLog?.call('[-] Erro ao consultar crt.sh');
     }
 
+    // httprobe
     onLog?.call('[*] Iniciando verificação com httprobe...');
     onHttprobeStart?.call();
 

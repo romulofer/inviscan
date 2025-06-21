@@ -64,78 +64,35 @@ class ScanScreen extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 const SizedBox(height: 8),
-                Container(
-                  height: 200,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: ListView.builder(
-                    itemCount: model.logs.length,
-                    itemBuilder: (context, index) {
-                      final log = model.logs[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          log,
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: LogUtils.getLogColor(log),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: ListView.builder(
+                      itemCount: model.logs.length,
+                      itemBuilder: (context, index) {
+                        final log = model.logs[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            log,
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: LogUtils.getLogColor(log),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (!model.isLoading && model.activeSubdomains.isEmpty)
-                  const Center(
-                    child: Text('Nenhum subdomínio ativo encontrado.'),
-                  ),
-                if (!model.isLoading && model.activeSubdomains.isNotEmpty)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Subdomínios ativos encontrados: (${model.activeSubdomains.length})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: ListView.builder(
-                              itemCount: model.activeSubdomains.length,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  dense: true,
-                                  leading: const Icon(
-                                    Icons.link,
-                                    size: 20,
-                                    color: Colors.deepPurple,
-                                  ),
-                                  title: Text(model.activeSubdomains[index]),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           );
