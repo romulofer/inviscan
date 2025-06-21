@@ -1,95 +1,127 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/scan_viewmodel.dart';
+import '../utils/log_utils.dart';
 
-class ScanScreen extends StatefulWidget {
+class ScanScreen extends StatelessWidget {
   final String domain;
-
   const ScanScreen({super.key, required this.domain});
 
   @override
-  State<ScanScreen> createState() => _ScanScreenState();
-}
-
-class _ScanScreenState extends State<ScanScreen> {
-  List<String> subdomains = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _startScan();
-  }
-
-  Future<void> _startScan() async {
-    final baseDomain = widget.domain;
-
-    final Set<String> results = {};
-
-    try {
-      final subfinder = await Process.run('subfinder', ['-d', baseDomain]);
-
-      if (subfinder.exitCode == 0) {
-        results.addAll(
-          (subfinder.stdout as String)
-              .split('\n')
-              .where((e) => e.trim().isNotEmpty),
-        );
-      }
-
-      final assetfinder = await Process.run('assetfinder', [
-        '--subs-only',
-        baseDomain,
-      ]);
-
-      if (assetfinder.exitCode == 0) {
-        results.addAll(
-          (assetfinder.stdout as String)
-              .split('\n')
-              .where((e) => e.trim().isNotEmpty),
-        );
-      }
-
-      final crtsh = await Process.run('bash', [
-        '-c',
-        'curl -s https://crt.sh/?q=%25.$baseDomain&output=json',
-      ]);
-      if (crtsh.exitCode == 0) {
-        final List<String> parsed =
-            RegExp(r'"name_value"\s*:\s*"([^"]+)"')
-                .allMatches(crtsh.stdout)
-                .map((m) => m.group(1)!)
-                .expand((e) => e.split('\n'))
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty && e.endsWith(baseDomain))
-                .toSet()
-                .toList();
-        results.addAll(parsed);
-      }
-    } catch (e) {
-      debugPrint('[-] Erro durante o scan: $e');
-    }
-
-    setState(() {
-      subdomains = results.toList()..sort();
-      isLoading = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<ScanViewModel>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      viewModel.scan(domain);
+    });
+
     return Scaffold(
-      appBar: AppBar(title: Text('Scan de subdomínios')),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : subdomains.isEmpty
-              ? const Center(child: Text('Nenhum subdomínio encontrado.'))
-              : ListView.builder(
-                itemCount: subdomains.length,
-                itemBuilder: (context, index) {
-                  return ListTile(title: Text(subdomains[index]));
-                },
-              ),
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text('Scan de subdomínios'),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
+      body: Consumer<ScanViewModel>(
+        builder: (context, model, _) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (model.isLoading) ...[
+                  const Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 12),
+                        Text('Escaneando...', style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                if (!model.isLoading)
+                  const Text(
+                    'Log de execução:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 200,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: ListView.builder(
+                    itemCount: model.logs.length,
+                    itemBuilder: (context, index) {
+                      final log = model.logs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          log,
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: LogUtils.getLogColor(log),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (!model.isLoading && model.subdomains.isEmpty)
+                  const Center(child: Text('Nenhum subdomínio encontrado.')),
+                if (!model.isLoading && model.subdomains.isNotEmpty)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Subdomínios encontrados:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ListView.builder(
+                              itemCount: model.subdomains.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.link,
+                                    size: 20,
+                                    color: Colors.deepPurple,
+                                  ),
+                                  title: Text(model.subdomains[index]),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
