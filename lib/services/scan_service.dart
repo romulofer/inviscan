@@ -63,12 +63,23 @@ class ScanService {
     final crtsh = await Process.run('bash', ['-c', crtshCommand]);
 
     if (crtsh.exitCode == 0) {
-      final matches =
-          RegExp(r'<TD>([\w\.\-\*]+)<(?:BR>|\/TD>)')
-              .allMatches(crtsh.stdout)
-              .map((m) => m.group(1)!)
-              .where((e) => e.contains(baseDomain))
-              .toSet();
+      final Set<String> matches = {};
+
+      final lines = crtsh.stdout.toString().split(RegExp(r'\r?\n'));
+      final regex = RegExp(r'<TD>([^<]+)</TD>', caseSensitive: false);
+
+      for (final line in lines) {
+        final match = regex.firstMatch(line);
+        if (match != null) {
+          final value = match.group(1)!.trim();
+          if (value.contains(baseDomain) &&
+              !value.contains('*') &&
+              !value.contains(' ')) {
+            matches.add(value);
+          }
+        }
+      }
+
       allSubdomains.addAll(matches);
       onLog?.call('[+] crt.sh encontrou ${matches.length} subdomínios.');
     } else {
