@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/scan_service.dart';
 
 class ScanViewModel extends ChangeNotifier {
   final ScanService _scanService = ScanService();
 
   List<String> subdomains = [];
+  List<String> activeSubdomains = [];
   List<String> logs = [];
   bool isLoading = false;
 
@@ -14,9 +15,16 @@ class ScanViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final (resultSet, resultLogs) = await _scanService.scanDomain(domain);
+      final (resultSet, _, activeList) = await _scanService.scanDomain(
+        domain,
+        onLog: (line) {
+          logs.add(line);
+          notifyListeners(); // 🔁 reatividade imediata!
+        },
+      );
+
       subdomains = resultSet.toList()..sort();
-      logs = resultLogs;
+      activeSubdomains = activeList.toList()..sort();
     } catch (e) {
       logs.add('[-] Erro: $e');
     }

@@ -75,16 +75,18 @@ class ScanScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (!model.isLoading && model.subdomains.isEmpty)
-                  const Center(child: Text('Nenhum subdomínio encontrado.')),
-                if (!model.isLoading && model.subdomains.isNotEmpty)
+                if (!model.isLoading && model.activeSubdomains.isEmpty)
+                  const Center(
+                    child: Text('Nenhum subdomínio ativo encontrado.'),
+                  ),
+                if (!model.isLoading && model.activeSubdomains.isNotEmpty)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Subdomínios encontrados:',
-                          style: TextStyle(
+                        Text(
+                          'Subdomínios ativos encontrados: (${model.activeSubdomains.length})',
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -99,7 +101,7 @@ class ScanScreen extends StatelessWidget {
                               border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: ListView.builder(
-                              itemCount: model.subdomains.length,
+                              itemCount: model.activeSubdomains.length,
                               itemBuilder: (context, index) {
                                 return ListTile(
                                   dense: true,
@@ -108,7 +110,7 @@ class ScanScreen extends StatelessWidget {
                                     size: 20,
                                     color: Colors.deepPurple,
                                   ),
-                                  title: Text(model.subdomains[index]),
+                                  title: Text(model.activeSubdomains[index]),
                                 );
                               },
                             ),

@@ -1,79 +1,105 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:inviscan/utils/save_results.dart';
 
 class ScanService {
-  Future<(Set<String>, List<String>)> scanDomain(String domain) async {
-    final Set<String> results = {};
-    final List<String> logs = [];
+  Future<(Set<String>, List<String>, List<String>)> scanDomain(
+    String domain, {
+    void Function(String log)? onLog,
+  }) async {
+    final Set<String> allSubdomains = {};
+    final Set<String> active = {};
 
-    logs.add('[*] Rodando subfinder com comando: subfinder -d $domain');
-    final subfinder = await Process.run('subfinder', ['-d', domain]);
-    if (subfinder.exitCode == 0) {
-      final found =
-          (subfinder.stdout as String)
-              .split('\n')
-              .where((e) => e.trim().isNotEmpty)
-              .toSet();
-      results.addAll(found);
-      logs.add('[+] subfinder encontrou ${found.length} resultados.');
-    } else {
-      logs.add('[!] subfinder retornou erro: ${subfinder.stderr}');
+    final baseDomain = domain.trim();
+
+    Future<int> runCommand(
+      String name,
+      List<String> args,
+      Set<String> accumulator,
+    ) async {
+      onLog?.call('[*] Executando $name com comando: $name ${args.join(' ')}');
+
+      final before = accumulator.length;
+      final process = await Process.start(name, args, runInShell: true);
+
+      await for (var line in process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        final value = line.trim();
+        if (value.isNotEmpty) {
+          accumulator.add(value);
+        }
+      }
+
+      final exitCode = await process.exitCode;
+      if (exitCode != 0) {
+        onLog?.call('[-] $name terminou com erro (código $exitCode).');
+      }
+
+      return accumulator.length - before;
     }
 
-    logs.add(
-      '[*] Rodando assetfinder com comando: assetfinder --subs-only $domain',
-    );
-    final assetfinder = await Process.run('assetfinder', [
+    // subfinder
+    final subfinderCount = await runCommand('subfinder', [
+      '-d',
+      baseDomain,
+    ], allSubdomains);
+    onLog?.call('[+] subfinder encontrou $subfinderCount subdomínios.');
+
+    // assetfinder
+    final assetfinderCount = await runCommand('assetfinder', [
       '--subs-only',
-      domain,
-    ]);
-    if (assetfinder.exitCode == 0) {
-      final found =
-          (assetfinder.stdout as String)
-              .split('\n')
-              .where((e) => e.trim().isNotEmpty)
-              .toSet();
-      results.addAll(found);
-      logs.add('[+] assetfinder encontrou ${found.length} resultados.');
-    } else {
-      logs.add('[!] assetfinder retornou erro: ${assetfinder.stderr}');
-    }
+      baseDomain,
+    ], allSubdomains);
+    onLog?.call('[+] assetfinder encontrou $assetfinderCount subdomínios.');
 
-    logs.add(
-      '[*] Consultando crt.sh (HTML) com certificados válidos apenas...',
-    );
+    // crt.sh
+    onLog?.call('[*] Consultando crt.sh...');
     final crtsh = await Process.run('bash', [
       '-c',
-      'curl -s "https://crt.sh/?q=%25.$domain&exclude=expired"',
+      'curl -s "https://crt.sh/?q=%25.$baseDomain&exclude=expired"',
     ]);
 
     if (crtsh.exitCode == 0) {
-      final Set<String> found = {};
+      final matches =
+          RegExp(r'<TD>([\w\.\-\*]+)<(?:BR>|\/TD>)')
+              .allMatches(crtsh.stdout)
+              .map((m) => m.group(1)!)
+              .where((e) => e.contains(baseDomain))
+              .toSet();
 
-      final matches = RegExp(
-        r'<TD>([^<]*\.' +
-            RegExp.escape(domain) +
-            r'(?:<BR>[^<]*\.' +
-            RegExp.escape(domain) +
-            r')*)<\/TD>',
-        caseSensitive: false,
-      ).allMatches(crtsh.stdout);
-
-      for (final match in matches) {
-        final raw = match.group(1)!;
-        final parts = raw
-            .split('<BR>')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty);
-        found.addAll(parts);
-      }
-
-      results.addAll(found);
-      logs.add('[+] crt.sh (HTML) encontrou ${found.length} resultados.');
+      allSubdomains.addAll(matches);
+      onLog?.call('[+] crt.sh encontrou ${matches.length} subdomínios.');
     } else {
-      logs.add('[!] crt.sh retornou erro: ${crtsh.stderr}');
+      onLog?.call('[-] Erro ao consultar crt.sh');
     }
 
-    logs.add('[*] Total de subdomínios únicos encontrados: ${results.length}');
-    return (results, logs);
+    // httprobe
+    onLog?.call('[*] Iniciando verificação com httprobe...');
+    final httprobe = await Process.start('httprobe', [], runInShell: true);
+    for (final sub in allSubdomains) {
+      httprobe.stdin.writeln(sub);
+    }
+    await httprobe.stdin.close();
+
+    await for (var line in httprobe.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())) {
+      final url = line.trim();
+      if (url.isNotEmpty) {
+        active.add(url);
+      }
+    }
+
+    await httprobe.exitCode;
+    onLog?.call(
+      '[+] httprobe identificou ${active.length} subdomínios ativos.',
+    );
+    onLog?.call(
+      '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
+    );
+
+    await saveResults(allSubdomains, allSubdomains.toSet(), active);
+    return (allSubdomains, <String>[], active.toList());
   }
 }
