@@ -1,10 +1,10 @@
+import '../utils/juicy_targets.dart';
 import '../utils/save_results.dart';
 import 'scan/assetfinder_scan.dart';
 import 'scan/crtsh_scan.dart';
 import 'scan/gowitness_scan.dart';
 import 'scan/httprobe_scan.dart';
 import 'scan/subfinder_scan.dart';
-import '../utils/juicy_targets.dart';
 
 class ScanService {
   Future<(Set<String>, List<String>)> scanDomainWithProgress(
@@ -78,12 +78,10 @@ class ScanService {
       );
     }
 
-    // juicy targets
     final juicyTargets = await identifyJuicyTargets(activeList);
 
-    // Resumo final
     onLog?.call('-----------------------------------------------------------');
-    onLog?.call('[Resumo dos Findings]');
+    onLog?.call('[Resumo das descobertas]');
     onLog?.call('-----------------------------------------------------------');
     onLog?.call('→ Subdomínios únicos encontrados: ${allSubdomains.length}');
     onLog?.call('→ Subdomínios ativos identificados: ${activeList.length}');
