@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'viewmodels/scan_viewmodel.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => ScanViewModel())],

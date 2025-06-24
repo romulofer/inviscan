@@ -120,6 +120,7 @@ class ScanService {
       '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
     );
 
+    // salva resultados e retorna diretório
     final scanDir = await saveResults(
       allSubdomains,
       allSubdomains.toSet(),
@@ -128,34 +129,28 @@ class ScanService {
 
     // gowitness
     if (active.isNotEmpty) {
-      final gowitnessDir = Directory(p.join(scanDir.path, 'gowitness'));
-      if (!await gowitnessDir.exists()) {
-        await gowitnessDir.create(recursive: true);
-      }
+      try {
+        final gowitnessDir = Directory(p.join(scanDir.path, 'gowitness'));
+        if (!await gowitnessDir.exists()) {
+          await gowitnessDir.create(recursive: true);
+        }
 
-      final gowitnessCommand = [
-        'gowitness',
-        'single',
-        '--disable-db',
-        '--destination',
-        gowitnessDir.path,
-        ...active,
-      ];
+        final urlsFile = File(p.join(gowitnessDir.path, 'urls.txt'));
+        await urlsFile.writeAsString(active.join('\n'));
 
-      onLog?.call(
-        '[*] Executando gowitness com comando: ${gowitnessCommand.join(' ')}',
-      );
+        final gowitnessCommand =
+            'gowitness scan file -f "${urlsFile.path}" --screenshot-path "${gowitnessDir.path}"';
+        onLog?.call('[*] Executando gowitness com comando: $gowitnessCommand');
 
-      final result = await Process.run(
-        gowitnessCommand.first,
-        gowitnessCommand.sublist(1),
-        runInShell: true,
-      );
+        final result = await Process.run('bash', ['-c', gowitnessCommand]);
 
-      if (result.exitCode == 0) {
-        onLog?.call('[+] gowitness finalizado com sucesso.');
-      } else {
-        onLog?.call('[-] gowitness encontrou erro: ${result.stderr}');
+        if (result.exitCode == 0) {
+          onLog?.call('[+] gowitness finalizado com sucesso.');
+        } else {
+          onLog?.call('[-] gowitness encontrou erro:\n${result.stderr}');
+        }
+      } catch (e) {
+        onLog?.call('[-] Erro ao executar gowitness: $e');
       }
     }
 
