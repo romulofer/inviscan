@@ -2,6 +2,7 @@ import '../utils/juicy_targets.dart';
 import '../utils/save_results.dart';
 import 'scan/assetfinder_scan.dart';
 import 'scan/crtsh_scan.dart';
+import 'scan/ffuf_scan.dart';
 import 'scan/gowitness_scan.dart';
 import 'scan/httprobe_scan.dart';
 import 'scan/subfinder_scan.dart';
@@ -42,6 +43,11 @@ class ScanService {
     );
     onLog?.call('[+] crt.sh encontrou $crtshCount subdomínios.');
 
+    // FFUF
+    final ffufSubdomains = await runFfufSubdomainScan(baseDomain, onLog: onLog);
+    allSubdomains.addAll(ffufSubdomains);
+    onLog?.call('[+] ffuf adicionou ${ffufSubdomains.length} subdomínios.');
+
     // httprobe
     onLog?.call('[*] Iniciando verificação com httprobe...');
     onHttprobeStart?.call();
@@ -78,8 +84,10 @@ class ScanService {
       );
     }
 
+    // juicy targets
     final juicyTargets = await identifyJuicyTargets(activeList);
 
+    // resumo
     onLog?.call('-----------------------------------------------------------');
     onLog?.call('[Resumo das descobertas]');
     onLog?.call('-----------------------------------------------------------');

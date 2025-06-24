@@ -36,7 +36,5 @@ Future<Set<String>> runHttprobe({
   await process.exitCode;
   onEnd?.call();
 
-  onLog?.call('[+] httprobe identificou ${active.length} subdomínios ativos.');
-
   return active;
 }

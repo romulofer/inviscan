@@ -27,6 +27,5 @@ Future<int> runAssetfinder({
   }
 
   final count = accumulator.length;
-  onLog?.call('[+] assetfinder encontrou $count subdomínios.');
   return count;
 }

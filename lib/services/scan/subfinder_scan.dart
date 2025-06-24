@@ -27,6 +27,5 @@ Future<int> runSubfinder({
   }
 
   final count = accumulator.length;
-  onLog?.call('[+] subfinder encontrou $count subdomínios.');
   return count;
 }

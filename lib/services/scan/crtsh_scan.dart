@@ -32,6 +32,5 @@ Future<int> runCrtsh({
   }
 
   accumulator.addAll(matches);
-  onLog?.call('[+] crt.sh encontrou ${matches.length} subdomínios.');
   return matches.length;
 }
