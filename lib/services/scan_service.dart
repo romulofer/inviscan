@@ -1,8 +1,10 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:path/path.dart' as p;
-
 import '../utils/save_results.dart';
+import 'scan/assetfinder_scan.dart';
+import 'scan/crtsh_scan.dart';
+import 'scan/gowitness_scan.dart';
+import 'scan/httprobe_scan.dart';
+import 'scan/subfinder_scan.dart';
+import '../utils/juicy_targets.dart';
 
 class ScanService {
   Future<(Set<String>, List<String>)> scanDomainWithProgress(
@@ -13,147 +15,85 @@ class ScanService {
     void Function()? onHttprobeEnd,
   }) async {
     final Set<String> allSubdomains = {};
-    final Set<String> active = {};
+    final List<String> activeList = [];
     final baseDomain = domain.trim();
 
-    Future<int> runCommand(
-      String name,
-      List<String> args,
-      Set<String> accumulator,
-    ) async {
-      final fullCommand = '$name ${args.join(' ')}';
-      onLog?.call('[*] Executando $name com comando: $fullCommand');
-      final process = await Process.start(name, args, runInShell: true);
-
-      await for (var line in process.stdout
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())) {
-        final value = line.trim();
-        if (value.isNotEmpty) {
-          accumulator.add(value);
-        }
-      }
-
-      final exitCode = await process.exitCode;
-      if (exitCode != 0) {
-        onLog?.call('[-] $name terminou com erro (código $exitCode).');
-      }
-      return accumulator.length;
-    }
-
-    // subfinder
-    final subfinderCount = await runCommand('subfinder', [
-      '-d',
-      baseDomain,
-    ], allSubdomains);
+    // Subfinder
+    final subfinderCount = await runSubfinder(
+      domain: baseDomain,
+      accumulator: allSubdomains,
+      onLog: onLog,
+    );
     onLog?.call('[+] subfinder encontrou $subfinderCount subdomínios.');
 
-    // assetfinder
-    final assetfinderCount = await runCommand('assetfinder', [
-      '--subs-only',
-      baseDomain,
-    ], allSubdomains);
+    // Assetfinder
+    final assetfinderCount = await runAssetfinder(
+      domain: baseDomain,
+      accumulator: allSubdomains,
+      onLog: onLog,
+    );
     onLog?.call('[+] assetfinder encontrou $assetfinderCount subdomínios.');
 
-    // crt.sh via HTML
-    final crtshCommand =
-        'curl -s "https://crt.sh/?q=%25.$baseDomain&exclude=expired"';
-    onLog?.call('[*] Executando consulta ao crt.sh com comando: $crtshCommand');
-
-    final crtsh = await Process.run('bash', ['-c', crtshCommand]);
-
-    if (crtsh.exitCode == 0) {
-      final Set<String> matches = {};
-
-      final lines = crtsh.stdout.toString().split(RegExp(r'\r?\n'));
-      final regex = RegExp(r'<TD>([^<]+)</TD>', caseSensitive: false);
-
-      for (final line in lines) {
-        final match = regex.firstMatch(line);
-        if (match != null) {
-          final value = match.group(1)!.trim();
-          if (value.contains(baseDomain) &&
-              !value.contains('*') &&
-              !value.contains(' ')) {
-            matches.add(value);
-          }
-        }
-      }
-
-      allSubdomains.addAll(matches);
-      onLog?.call('[+] crt.sh encontrou ${matches.length} subdomínios.');
-    } else {
-      onLog?.call('[-] Erro ao consultar crt.sh');
-    }
+    // crt.sh
+    final crtshCount = await runCrtsh(
+      domain: baseDomain,
+      accumulator: allSubdomains,
+      onLog: onLog,
+    );
+    onLog?.call('[+] crt.sh encontrou $crtshCount subdomínios.');
 
     // httprobe
     onLog?.call('[*] Iniciando verificação com httprobe...');
     onHttprobeStart?.call();
 
-    final total = allSubdomains.length;
-    var current = 0;
+    final active = await runHttprobe(
+      subdomains: allSubdomains,
+      onLog: onLog,
+      onProgress: onHttprobeProgress,
+    );
 
-    final httprobe = await Process.start('httprobe', [], runInShell: true);
-    for (final sub in allSubdomains) {
-      httprobe.stdin.writeln(sub);
-    }
-    await httprobe.stdin.close();
-
-    await for (var line in httprobe.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())) {
-      final url = line.trim();
-      if (url.isNotEmpty) {
-        active.add(url);
-      }
-      current++;
-      onHttprobeProgress?.call(current, total);
-    }
-
-    await httprobe.exitCode;
+    activeList.addAll(active);
     onHttprobeEnd?.call();
 
     onLog?.call(
-      '[+] httprobe identificou ${active.length} subdomínios ativos.',
+      '[+] httprobe identificou ${activeList.length} subdomínios ativos.',
     );
     onLog?.call(
       '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
     );
 
-    // salva resultados e retorna diretório
+    // Salvando resultados
     final scanDir = await saveResults(
       allSubdomains,
       allSubdomains.toSet(),
-      active,
+      activeList.toSet(),
     );
 
     // gowitness
-    if (active.isNotEmpty) {
-      try {
-        final gowitnessDir = Directory(p.join(scanDir.path, 'gowitness'));
-        if (!await gowitnessDir.exists()) {
-          await gowitnessDir.create(recursive: true);
-        }
-
-        final urlsFile = File(p.join(gowitnessDir.path, 'urls.txt'));
-        await urlsFile.writeAsString(active.join('\n'));
-
-        final gowitnessCommand =
-            'gowitness scan file -f "${urlsFile.path}" --screenshot-path "${gowitnessDir.path}"';
-        onLog?.call('[*] Executando gowitness com comando: $gowitnessCommand');
-
-        final result = await Process.run('bash', ['-c', gowitnessCommand]);
-
-        if (result.exitCode == 0) {
-          onLog?.call('[+] gowitness finalizado com sucesso.');
-        } else {
-          onLog?.call('[-] gowitness encontrou erro:\n${result.stderr}');
-        }
-      } catch (e) {
-        onLog?.call('[-] Erro ao executar gowitness: $e');
-      }
+    if (activeList.isNotEmpty) {
+      await runGowitness(
+        activeSubdomains: activeList,
+        scanDirectory: scanDir,
+        onLog: onLog,
+      );
     }
 
-    return (allSubdomains, active.toList());
+    // juicy targets
+    final juicyTargets = await identifyJuicyTargets(activeList);
+
+    // Resumo final
+    onLog?.call('-----------------------------------------------------------');
+    onLog?.call('[Resumo dos Findings]');
+    onLog?.call('-----------------------------------------------------------');
+    onLog?.call('→ Subdomínios únicos encontrados: ${allSubdomains.length}');
+    onLog?.call('→ Subdomínios ativos identificados: ${activeList.length}');
+    onLog?.call('→ Juicy Targets encontrados: ${juicyTargets.length}');
+    onLog?.call(
+      '→ Screenshots salvos: ${activeList.isNotEmpty ? 'Sim' : 'Não'}',
+    );
+    onLog?.call('→ Diretório do scan: ${scanDir.path}');
+    onLog?.call('-----------------------------------------------------------');
+
+    return (allSubdomains, activeList);
   }
 }
