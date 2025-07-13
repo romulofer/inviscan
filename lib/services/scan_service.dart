@@ -49,7 +49,6 @@ class ScanService {
     onLog?.call('[+] ffuf adicionou ${ffufSubdomains.length} subdomínios.');
 
     // httprobe
-    onLog?.call('[*] Iniciando verificação com httprobe...');
     onHttprobeStart?.call();
 
     final active = await runHttprobe(

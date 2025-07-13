@@ -1,33 +1,30 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 Future<Set<String>> runFfufSubdomainScan(
   String domain, {
   void Function(String log)? onLog,
 }) async {
   final Set<String> foundSubdomains = {};
-  final wordlistPath = 'lib/wordlists/ffuf/wordlist.txt';
+
+  const defaultCommand =
+      'ffuf -w lib/wordlists/ffuf/wordlist.txt -u http://FUZZ.DOMAIN -mc 200 -of json -o /tmp/ffuf_output.json';
+
+  final prefs = await SharedPreferences.getInstance();
+  final savedCommand = prefs.getString('ffuf_command') ?? defaultCommand;
+
+  final resolvedCommand = savedCommand.replaceAll('DOMAIN', domain);
 
   onLog?.call('[*] Executando FFUF para descoberta de subdomínios...');
-  final ffufCommand = [
-    'ffuf',
-    '-w',
-    wordlistPath,
-    '-u',
-    'http://FUZZ.$domain',
-    '-mc',
-    '200',
-    '-of',
-    'json',
-    '-o',
-    '/tmp/ffuf_output.json',
-  ];
+  onLog?.call('[*] Comando: $resolvedCommand');
 
-  onLog?.call('[*] Comando: ${ffufCommand.join(' ')}');
+  final parts = resolvedCommand.split(' ').where((p) => p.isNotEmpty).toList();
 
   final process = await Process.run(
-    ffufCommand.first,
-    ffufCommand.sublist(1),
+    parts.first,
+    parts.sublist(1),
     runInShell: true,
   );
 
@@ -47,8 +44,13 @@ Future<Set<String>> runFfufSubdomainScan(
     final results = jsonData['results'] as List<dynamic>;
 
     for (final result in results) {
-      final url = result['input']['url'] as String;
+      final input = result['input'] as Map<String, dynamic>?;
+      final url = input?['url'] as String?;
+
+      if (url == null) continue; // Pula se não tiver URL
+
       final sub = url.replaceAll(RegExp(r'https?://'), '').split('/').first;
+
       if (sub.endsWith(domain)) {
         foundSubdomains.add(sub);
       }

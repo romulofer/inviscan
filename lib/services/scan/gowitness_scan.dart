@@ -12,9 +12,7 @@ Future<void> runGowitness({
   }
 
   final gowitnessDir = Directory(p.join(scanDirectory.path, 'gowitness'));
-  if (!await gowitnessDir.exists()) {
-    await gowitnessDir.create(recursive: true);
-  }
+  await gowitnessDir.create(recursive: true);
 
   final targetsFile = File(p.join(scanDirectory.path, 'gowitness_targets.txt'));
   await targetsFile.writeAsString(activeSubdomains.join('\n'));
@@ -26,28 +24,23 @@ Future<void> runGowitness({
     onLog?.call('[*] Banco de dados gowitness.sqlite3 removido.');
   }
 
-  final initResult = await Process.run('gowitness', ['init'], runInShell: true);
-  if (initResult.exitCode != 0) {
-    onLog?.call('[-] Erro ao inicializar gowitness: ${initResult.stderr}');
-    return;
-  }
-  onLog?.call('[+] gowitness iniciado com sucesso.');
-
   final command = [
     'gowitness',
+    'scan',
     'file',
-    '--source',
+    '-f',
     targetsFile.path,
-    '--destination',
+    '--screenshot-path',
     gowitnessDir.path,
   ];
-  onLog?.call('[*] Executando gowitness com comando: ${command.join(' ')}');
+  onLog?.call('[*] Comando gowitness: ${command.join(' ')}');
 
   final result = await Process.run(
     command.first,
     command.sublist(1),
     runInShell: true,
   );
+
   if (result.exitCode == 0) {
     onLog?.call('[+] gowitness capturou screenshots com sucesso.');
   } else {
