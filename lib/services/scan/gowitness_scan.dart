@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import '../../utils/binaries.dart';
 
 Future<void> runGowitness({
   required List<String> activeSubdomains,
@@ -16,34 +17,53 @@ Future<void> runGowitness({
 
   final targetsFile = File(p.join(scanDirectory.path, 'gowitness_targets.txt'));
   await targetsFile.writeAsString(activeSubdomains.join('\n'));
-  onLog?.call('[*] Subdomínios ativos salvos em ${targetsFile.path}');
+  onLog?.call('[*] URLs ativas salvas em ${targetsFile.path}');
 
-  final gowitnessDb = File('gowitness.sqlite3');
-  if (await gowitnessDb.exists()) {
-    await gowitnessDb.delete();
-    onLog?.call('[*] Banco de dados gowitness.sqlite3 removido.');
+  final dbPath = p.join(gowitnessDir.path, 'screenshots.db');
+  final dbFile = File(dbPath);
+  if (await dbFile.exists()) {
+    await dbFile.delete();
+    onLog?.call('[*] Banco de dados antigo removido: $dbPath');
   }
 
-  final command = [
-    'gowitness',
-    'scan',
+  final gowitnessExec = binPath('gowitness');
+
+  final args = [
     'file',
-    '-f',
+    '-s',
     targetsFile.path,
-    '--screenshot-path',
+    '-d',
     gowitnessDir.path,
+    '--db',
+    dbPath,
   ];
-  onLog?.call('[*] Comando gowitness: ${command.join(' ')}');
 
-  final result = await Process.run(
-    command.first,
-    command.sublist(1),
-    runInShell: true,
-  );
+  onLog?.call('[*] Comando gowitness: $gowitnessExec ${args.join(' ')}');
 
-  if (result.exitCode == 0) {
-    onLog?.call('[+] gowitness capturou screenshots com sucesso.');
-  } else {
-    onLog?.call('[-] gowitness encontrou erro: ${result.stderr}');
+  try {
+    final result = await Process.run(
+      gowitnessExec,
+      args,
+      runInShell: false,
+      workingDirectory: scanDirectory.path,
+    );
+
+    if (result.exitCode == 0) {
+      onLog?.call('[+] gowitness capturou screenshots com sucesso.');
+      final out =
+          (result.stdout is String)
+              ? result.stdout as String
+              : '${result.stdout}';
+      if (out.trim().isNotEmpty) onLog?.call(out.trim());
+    } else {
+      final err =
+          (result.stderr is String)
+              ? result.stderr as String
+              : '${result.stderr}';
+      onLog?.call('[-] gowitness terminou com erro (code ${result.exitCode}).');
+      if (err.trim().isNotEmpty) onLog?.call(err.trim());
+    }
+  } catch (e) {
+    onLog?.call('[-] Falha ao executar gowitness: $e');
   }
 }

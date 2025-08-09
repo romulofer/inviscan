@@ -1,3 +1,6 @@
+import 'package:uuid/uuid.dart';
+import '../repositories/scan_history_repository.dart';
+import '../models/scan_record.dart';
 import '../utils/juicy_targets.dart';
 import '../utils/save_results.dart';
 import 'scan/assetfinder_scan.dart';
@@ -17,7 +20,17 @@ class ScanService {
   }) async {
     final Set<String> allSubdomains = {};
     final List<String> activeList = [];
-    final baseDomain = domain.trim();
+    final startedAt = DateTime.now();
+
+    // Normaliza domínio (remove esquema e caminho)
+    String _normalizeDomain(String input) {
+      var d = input.trim();
+      d = d.replaceAll(RegExp(r'^https?://', caseSensitive: false), '');
+      d = d.split('/').first;
+      return d;
+    }
+
+    final baseDomain = _normalizeDomain(domain);
 
     // Subfinder
     final subfinderCount = await runSubfinder(
@@ -48,17 +61,15 @@ class ScanService {
     allSubdomains.addAll(ffufSubdomains);
     onLog?.call('[+] ffuf adicionou ${ffufSubdomains.length} subdomínios.');
 
-    // httprobe
-    onHttprobeStart?.call();
-
+    // httprobe (passe os hooks diretamente)
     final active = await runHttprobe(
       subdomains: allSubdomains,
       onLog: onLog,
+      onStart: onHttprobeStart,
       onProgress: onHttprobeProgress,
+      onEnd: onHttprobeEnd,
     );
-
     activeList.addAll(active);
-    onHttprobeEnd?.call();
 
     onLog?.call(
       '[+] httprobe identificou ${activeList.length} subdomínios ativos.',
@@ -67,11 +78,12 @@ class ScanService {
       '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
     );
 
-    // Salvando resultados
+    // Salvando resultados (total/únicos/ativos). Aqui total==únicos porque o acumulador é Set.
     final scanDir = await saveResults(
       allSubdomains,
       allSubdomains.toSet(),
       activeList.toSet(),
+      onLog: onLog,
     );
 
     // gowitness
@@ -84,9 +96,8 @@ class ScanService {
     }
 
     // juicy targets
-    final juicyTargets = await identifyJuicyTargets(activeList);
+    final juicyTargets = identifyJuicyTargets(activeList);
 
-    // resumo
     onLog?.call('-----------------------------------------------------------');
     onLog?.call('[Resumo das descobertas]');
     onLog?.call('-----------------------------------------------------------');
@@ -98,6 +109,24 @@ class ScanService {
     );
     onLog?.call('→ Diretório do scan: ${scanDir.path}');
     onLog?.call('-----------------------------------------------------------');
+
+    try {
+      final repo = ScanHistoryRepository();
+      await repo.append(
+        ScanRecord(
+          id: const Uuid().v4(),
+          domain: baseDomain,
+          startedAt: startedAt,
+          finishedAt: DateTime.now(),
+          subdomainsFound: allSubdomains.length,
+          status: 'success',
+          outputDir: scanDir.path,
+        ),
+      );
+      onLog?.call('[✓] Histórico atualizado.');
+    } catch (e) {
+      onLog?.call('[-] Falha ao atualizar histórico: $e');
+    }
 
     return (allSubdomains, activeList);
   }

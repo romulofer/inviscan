@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/scan_record.dart';
 import '../repositories/scan_history_repository.dart';
+import '../screens/scan_details_screen.dart';
 
 class PreviousScansList extends StatefulWidget {
   const PreviousScansList({Key? key}) : super(key: key);
@@ -150,28 +151,10 @@ class _PreviousScansListState extends State<PreviousScansList> {
                       isThreeLine: true,
                       trailing: _statusChip(r.status),
                       onTap: () {
-                        // TODO: abra tela de detalhes se você tiver (ou um modal)
-                        showDialog(
-                          context: context,
-                          builder:
-                              (_) => AlertDialog(
-                                title: Text('Detalhes: ${r.domain}'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('ID: ${r.id}'),
-                                    Text('Status: ${r.status}'),
-                                    Text('Saída: ${r.outputDir ?? "—"}'),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Fechar'),
-                                  ),
-                                ],
-                              ),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ScanDetailsScreen(record: r),
+                          ),
                         );
                       },
                       onLongPress: () async {

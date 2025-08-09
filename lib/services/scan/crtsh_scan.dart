@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 Future<int> runCrtsh({
@@ -5,32 +6,40 @@ Future<int> runCrtsh({
   required Set<String> accumulator,
   void Function(String log)? onLog,
 }) async {
-  final command = 'curl -s "https://crt.sh/?q=%25.$domain&exclude=expired"';
-  onLog?.call('[*] Executando consulta ao crt.sh com comando: $command');
+  final url = Uri.parse('https://crt.sh/?q=%25.$domain&exclude=expired');
+  onLog?.call('[*] Consultando crt.sh: $url');
 
-  final result = await Process.run('bash', ['-c', command]);
+  final initialLen = accumulator.length;
 
-  if (result.exitCode != 0) {
-    onLog?.call('[-] Erro ao consultar crt.sh');
-    return 0;
-  }
+  try {
+    final client = HttpClient()..userAgent = 'Mozilla/5.0 (Flutter; Inviscan)';
+    final req = await client.getUrl(url);
+    final res = await req.close();
 
-  final Set<String> matches = {};
-  final lines = result.stdout.toString().split(RegExp(r'\r?\n'));
-  final regex = RegExp(r'<TD>([^<]+)</TD>', caseSensitive: false);
+    if (res.statusCode != 200) {
+      onLog?.call('[-] crt.sh respondeu com status ${res.statusCode}.');
+      return 0;
+    }
 
-  for (final line in lines) {
-    final match = regex.firstMatch(line);
-    if (match != null) {
-      final value = match.group(1)!.trim();
+    final html = await res.transform(utf8.decoder).join();
+
+    final tdRegex = RegExp(r'<TD>([^<]+)</TD>', caseSensitive: false);
+    final Set<String> matches = {};
+
+    for (final m in tdRegex.allMatches(html)) {
+      final value = m.group(1)!.trim();
       if (value.contains(domain) &&
           !value.contains('*') &&
           !value.contains(' ')) {
         matches.add(value);
       }
     }
+
+    accumulator.addAll(matches);
+  } catch (e) {
+    onLog?.call('[-] Erro ao consultar/parsing crt.sh: $e');
   }
 
-  accumulator.addAll(matches);
-  return matches.length;
+  final added = accumulator.length - initialLen;
+  return added;
 }

@@ -1,31 +1,49 @@
 import 'dart:convert';
 import 'dart:io';
+import '../../utils/binaries.dart';
 
 Future<int> runSubfinder({
   required String domain,
   required Set<String> accumulator,
   void Function(String log)? onLog,
 }) async {
-  final args = ['-d', domain];
-  final fullCommand = 'subfinder ${args.join(' ')}';
+  final exec = binPath('subfinder');
+  final args = ['-d', domain, '-silent', '-all'];
+  onLog?.call('[*] Executando subfinder: $exec ${args.join(' ')}');
 
-  onLog?.call('[*] Executando subfinder com comando: $fullCommand');
+  final initialLen = accumulator.length;
+  final stderrBuf = StringBuffer();
 
-  final process = await Process.start('subfinder', args, runInShell: true);
-  await for (var line in process.stdout
-      .transform(utf8.decoder)
-      .transform(const LineSplitter())) {
-    final value = line.trim();
-    if (value.isNotEmpty) {
-      accumulator.add(value);
+  try {
+    final process = await Process.start(exec, args, runInShell: false);
+
+    final stdoutLines = process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
+    await for (final line in stdoutLines) {
+      final value = line.trim();
+      if (value.isNotEmpty) {
+        accumulator.add(value);
+      }
     }
+
+    final stderrLines = process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
+    await for (final line in stderrLines) {
+      stderrBuf.writeln(line);
+    }
+
+    final code = await process.exitCode;
+    if (code != 0) {
+      onLog?.call('[-] subfinder terminou com erro (código $code).');
+      final err = stderrBuf.toString().trim();
+      if (err.isNotEmpty) onLog?.call(err);
+    }
+  } catch (e) {
+    onLog?.call('[-] Falha ao executar subfinder: $e');
   }
 
-  final exitCode = await process.exitCode;
-  if (exitCode != 0) {
-    onLog?.call('[-] subfinder terminou com erro (código $exitCode).');
-  }
-
-  final count = accumulator.length;
-  return count;
+  final added = accumulator.length - initialLen;
+  return added;
 }
