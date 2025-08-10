@@ -58,11 +58,45 @@ class ScanScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                 ],
-                if (!model.isLoading)
-                  const Text(
-                    'Log de execução:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Log de execução:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Copiar logs',
+                          icon: const Icon(Icons.copy, size: 20),
+                          onPressed:
+                              model.logs.isEmpty
+                                  ? null
+                                  : () =>
+                                      LogUtils.copyLogs(context, model.logs),
+                        ),
+                        IconButton(
+                          tooltip: 'Salvar logs em arquivo',
+                          icon: const Icon(Icons.save_alt, size: 20),
+                          onPressed:
+                              model.logs.isEmpty
+                                  ? null
+                                  : () => LogUtils.saveLogs(
+                                    context,
+                                    model.logs,
+                                    domain: domain,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 8),
                 Expanded(
                   child: Container(

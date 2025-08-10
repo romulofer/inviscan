@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/scan_record.dart';
 
 class ScanHistoryRepository {
   static const _fileName = 'scan_history.json';
+
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
   Future<File> _historyFile() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -24,6 +27,7 @@ class ScanHistoryRepository {
   Future<void> saveAll(List<ScanRecord> items) async {
     final file = await _historyFile();
     await file.writeAsString(ScanRecord.listToJson(items));
+    revision.value++;
   }
 
   Future<void> append(ScanRecord record) async {
@@ -41,5 +45,6 @@ class ScanHistoryRepository {
   Future<void> clear() async {
     final file = await _historyFile();
     await file.writeAsString('[]');
+    revision.value++;
   }
 }

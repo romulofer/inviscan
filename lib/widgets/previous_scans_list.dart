@@ -5,7 +5,8 @@ import '../repositories/scan_history_repository.dart';
 import '../screens/scan_details_screen.dart';
 
 class PreviousScansList extends StatefulWidget {
-  const PreviousScansList({Key? key}) : super(key: key);
+  const PreviousScansList({Key? key, this.maxHeight = 420}) : super(key: key);
+  final double maxHeight;
 
   @override
   State<PreviousScansList> createState() => _PreviousScansListState();
@@ -20,27 +21,34 @@ class _PreviousScansListState extends State<PreviousScansList> {
   void initState() {
     super.initState();
     _future = _repo.getAll();
+    ScanHistoryRepository.revision.addListener(_onRevisionChanged);
   }
 
-  Future<void> _refresh() async {
+  void _onRevisionChanged() => _reload();
+
+  Future<void> _reload() async {
     final items = await _repo.getAll();
     if (!mounted) return;
-    setState(() => _future = Future.value(items));
+    setState(() {
+      _future = Future.value(items);
+    });
+  }
+
+  Future<void> _refresh() => _reload();
+
+  @override
+  void dispose() {
+    ScanHistoryRepository.revision.removeListener(_onRevisionChanged);
+    super.dispose();
   }
 
   Widget _statusChip(String status) {
-    ColorScheme cs = Theme.of(context).colorScheme;
-    Color bg;
-    switch (status) {
-      case 'running':
-        bg = cs.secondaryContainer;
-        break;
-      case 'failed':
-        bg = cs.errorContainer;
-        break;
-      default:
-        bg = cs.primaryContainer;
-    }
+    final cs = Theme.of(context).colorScheme;
+    final bg = switch (status) {
+      'running' => cs.secondaryContainer,
+      'failed' => cs.errorContainer,
+      _ => cs.primaryContainer,
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -132,59 +140,62 @@ class _PreviousScansListState extends State<PreviousScansList> {
                   );
                 }
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final r = items[i];
-                    final started = _fmt.format(r.startedAt);
-                    final finished =
-                        r.finishedAt != null ? _fmt.format(r.finishedAt!) : '—';
-                    return ListTile(
-                      leading: const Icon(Icons.search),
-                      title: Text(r.domain),
-                      subtitle: Text(
-                        'Início: $started  •  Fim: $finished\nSubdomínios: ${r.subdomainsFound}',
-                      ),
-                      isThreeLine: true,
-                      trailing: _statusChip(r.status),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ScanDetailsScreen(record: r),
-                          ),
-                        );
-                      },
-                      onLongPress: () async {
-                        final ok = await showDialog<bool>(
-                          context: context,
-                          builder:
-                              (_) => AlertDialog(
-                                title: const Text('Remover este item?'),
-                                content: Text('Domínio: ${r.domain}'),
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.pop(context, false),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed:
-                                        () => Navigator.pop(context, true),
-                                    child: const Text('Remover'),
-                                  ),
-                                ],
-                              ),
-                        );
-                        if (ok == true) {
-                          await _repo.removeById(r.id);
-                          await _refresh();
-                        }
-                      },
-                    );
-                  },
+                return SizedBox(
+                  height: widget.maxHeight,
+                  child: ListView.separated(
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      final r = items[i];
+                      final started = _fmt.format(r.startedAt);
+                      final finished =
+                          r.finishedAt != null
+                              ? _fmt.format(r.finishedAt!)
+                              : '—';
+                      return ListTile(
+                        leading: const Icon(Icons.search),
+                        title: Text(r.domain),
+                        subtitle: Text(
+                          'Início: $started  •  Fim: $finished\nSubdomínios: ${r.subdomainsFound}',
+                        ),
+                        isThreeLine: true,
+                        trailing: _statusChip(r.status),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ScanDetailsScreen(record: r),
+                            ),
+                          );
+                        },
+                        onLongPress: () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder:
+                                (_) => AlertDialog(
+                                  title: const Text('Remover este item?'),
+                                  content: Text('Domínio: ${r.domain}'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, true),
+                                      child: const Text('Remover'),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          if (ok == true) {
+                            await _repo.removeById(r.id);
+                            await _refresh();
+                          }
+                        },
+                      );
+                    },
+                  ),
                 );
               },
             ),
