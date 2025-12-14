@@ -37,7 +37,9 @@ Future<void> runGowitness({
     gowitnessDir.path,
   ];
 
-  onLog?.call('[*] Comando gowitness: $gowitnessExec ${args.join(' ')}');
+  onLog?.call(
+    '[*] Executando gowitness com comando: $gowitnessExec ${args.join(' ')}',
+  );
 
   try {
     final result = await Process.run(
