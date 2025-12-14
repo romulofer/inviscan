@@ -72,9 +72,6 @@ class ScanService {
     activeList.addAll(active);
 
     onLog?.call(
-      '[+] httprobe identificou ${activeList.length} subdomínios ativos.',
-    );
-    onLog?.call(
       '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
     );
 

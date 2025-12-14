@@ -67,7 +67,7 @@ Future<Set<String>> runFfufSubdomainScan(
     }
   }
 
-  onLog?.call('[*] Executando FFUF (binaries): $ffufExec ${args.join(' ')}');
+  onLog?.call('[*] Executando FFUF com o comando: $ffufExec ${args.join(' ')}');
 
   late ProcessResult proc;
   try {
