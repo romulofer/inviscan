@@ -26,11 +26,6 @@ Future<void> runGowitness({
     onLog?.call('[*] Banco de dados antigo removido: $dbPath');
   }
 
-  String _sqliteUri(String absPath) {
-    final norm = absPath.replaceAll('\\', '/');
-    return 'sqlite:///$norm';
-  }
-
   final gowitnessExec = binPath('gowitness');
 
   final args = [
@@ -40,9 +35,6 @@ Future<void> runGowitness({
     targetsFile.path,
     '--screenshot-path',
     gowitnessDir.path,
-    '--write-db',
-    '--write-db-uri',
-    _sqliteUri(dbPath),
   ];
 
   onLog?.call('[*] Comando gowitness: $gowitnessExec ${args.join(' ')}');
