@@ -4,7 +4,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 Future<Directory> saveResults(
-  Set<String> total,
   Set<String> unique,
   Set<String> active, {
   void Function(String log)? onLog,
@@ -24,10 +23,6 @@ Future<Directory> saveResults(
   final scanDir = Directory(p.join(baseDir.path, timestamp));
   await scanDir.create(recursive: true);
   onLog?.call('[+] Criado diretório do scan: ${scanDir.path}');
-
-  final totalPath = p.join(scanDir.path, 'subdominios_totais.txt');
-  await File(totalPath).writeAsString(total.join('\n'));
-  onLog?.call('[+] Subdomínios totais salvos em: $totalPath');
 
   final uniquePath = p.join(scanDir.path, 'subdominios_unicos.txt');
   await File(uniquePath).writeAsString(unique.join('\n'));

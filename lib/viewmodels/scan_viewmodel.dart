@@ -30,7 +30,7 @@ class ScanViewModel extends ChangeNotifier {
     }
 
     void handleHttprobeProgress(int current, int total) {
-      httprobeProgress = current / total;
+      httprobeProgress = total == 0 ? 0.0 : current / total;
       notifyListeners();
     }
 

@@ -16,14 +16,19 @@ Future<Set<String>> runFfufSubdomainScan(
   final tempDir = await getTemporaryDirectory();
   final defaultOutputPath = p.join(tempDir.path, 'ffuf_output.json');
 
-  // The wordlist path is relative to the project root during development.
-  // In a packaged build the wordlist should be bundled alongside the binary.
-  final defaultWordlist = p.join(
+  // Prefer wordlist bundled next to the executable (packaged builds),
+  // then fall back to the project's lib/ directory (development runs).
+  final wlInExec = File(p.join(
     File(Platform.resolvedExecutable).parent.path,
-    'wordlists',
-    'ffuf',
-    'wordlist.txt',
-  );
+    'wordlists', 'ffuf', 'wordlist.txt',
+  ));
+  final wlInCwd = File(p.join(
+    Directory.current.path,
+    'lib', 'wordlists', 'ffuf', 'wordlist.txt',
+  ));
+  final defaultWordlist = wlInExec.existsSync()
+      ? wlInExec.path
+      : (wlInCwd.existsSync() ? wlInCwd.path : wlInExec.path);
 
   final defaultCommand =
       'ffuf -w "$defaultWordlist" -u http://FUZZ.DOMAIN -mc 200 -of json -o "$defaultOutputPath"';
@@ -126,13 +131,7 @@ Future<Set<String>> runFfufSubdomainScan(
 
     for (final r in results) {
       if (r is! Map) continue;
-      final input = r['input'];
-      String? url;
-      if (input is Map && input['url'] is String) {
-        url = input['url'] as String;
-      } else if (r['url'] is String) {
-        url = r['url'] as String;
-      }
+      final url = r['url'] is String ? r['url'] as String : null;
       if (url == null) continue;
 
       final host =

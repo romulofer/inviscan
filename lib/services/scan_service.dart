@@ -78,7 +78,6 @@ class ScanService {
     // Save results to disk.
     final scanDir = await saveResults(
       allSubdomains,
-      allSubdomains,
       activeList.toSet(),
       onLog: onLog,
     );

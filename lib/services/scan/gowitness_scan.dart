@@ -30,6 +30,7 @@ Future<void> runGowitness({
     targetsFile.path,
     '--screenshot-path',
     gowitnessDir.path,
+    '--write-none',
   ];
 
   onLog?.call(
