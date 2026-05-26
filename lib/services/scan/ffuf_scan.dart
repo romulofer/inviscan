@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/binaries.dart';
 
@@ -10,15 +12,28 @@ Future<Set<String>> runFfufSubdomainScan(
 }) async {
   final Set<String> foundSubdomains = {};
 
-  const defaultCommand =
-      'ffuf -w lib/wordlists/ffuf/wordlist.txt -u http://FUZZ.DOMAIN -mc 200 -of json -o /tmp/ffuf_output.json';
+  // Use a cross-platform temp directory instead of the hardcoded /tmp path.
+  final tempDir = await getTemporaryDirectory();
+  final defaultOutputPath = p.join(tempDir.path, 'ffuf_output.json');
+
+  // The wordlist path is relative to the project root during development.
+  // In a packaged build the wordlist should be bundled alongside the binary.
+  final defaultWordlist = p.join(
+    File(Platform.resolvedExecutable).parent.path,
+    'wordlists',
+    'ffuf',
+    'wordlist.txt',
+  );
+
+  final defaultCommand =
+      'ffuf -w "$defaultWordlist" -u http://FUZZ.DOMAIN -mc 200 -of json -o "$defaultOutputPath"';
 
   final prefs = await SharedPreferences.getInstance();
   final savedCommand = prefs.getString('ffuf_command') ?? defaultCommand;
 
   final resolvedCommand = savedCommand.replaceAll('DOMAIN', domain);
 
-  List<String> _tokenize(String cmd) {
+  List<String> tokenize(String cmd) {
     final List<String> out = [];
     final StringBuffer current = StringBuffer();
     bool inSingle = false, inDouble = false;
@@ -46,7 +61,7 @@ Future<Set<String>> runFfufSubdomainScan(
     return out;
   }
 
-  final parts = _tokenize(resolvedCommand);
+  final parts = tokenize(resolvedCommand);
   if (parts.isEmpty) {
     onLog?.call('[-] Comando do FFUF vazio.');
     return foundSubdomains;
@@ -58,6 +73,7 @@ Future<Set<String>> runFfufSubdomainScan(
   final args = <String>[];
   args.addAll(parts.skip(1));
 
+  // Locate the -o argument so we know where to read the JSON output from.
   String? outputPath;
   for (int i = 0; i < args.length; i++) {
     final a = args[i];
@@ -67,8 +83,14 @@ Future<Set<String>> runFfufSubdomainScan(
     }
   }
 
+  // If no -o was specified in the command, inject one pointing at the temp dir.
+  if (outputPath == null) {
+    outputPath = defaultOutputPath;
+    args.addAll(['-of', 'json', '-o', outputPath]);
+  }
+
   onLog?.call(
-    '[*] Executando FFUF com o comando  : $ffufExec ${args.join(' ')}',
+    '[*] Executando FFUF com o comando: $ffufExec ${args.join(' ')}',
   );
 
   late ProcessResult proc;
@@ -87,7 +109,7 @@ Future<Set<String>> runFfufSubdomainScan(
     return foundSubdomains;
   }
 
-  final outFile = File(outputPath ?? '/tmp/ffuf_output.json');
+  final outFile = File(outputPath);
   if (!await outFile.exists()) {
     onLog?.call(
       '[-] Arquivo de saída do FFUF não encontrado em: ${outFile.path}',
@@ -127,6 +149,11 @@ Future<Set<String>> runFfufSubdomainScan(
   } catch (e) {
     onLog?.call('[-] Erro ao processar JSON do FFUF: $e');
   }
+
+  // Clean up the temp output file.
+  try {
+    if (await outFile.exists()) await outFile.delete();
+  } catch (_) {}
 
   return foundSubdomains;
 }

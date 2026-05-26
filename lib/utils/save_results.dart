@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 Future<Directory> saveResults(
   Set<String> total,
@@ -8,9 +9,11 @@ Future<Directory> saveResults(
   Set<String> active, {
   void Function(String log)? onLog,
 }) async {
-  final homeDir =
-      Platform.environment['HOME'] ?? Platform.environment['USERPROFILE']!;
-  final baseDir = Directory(p.join(homeDir, 'inviscan_dart'));
+  // Resolve a reliable base directory on every platform.
+  // path_provider's getApplicationDocumentsDirectory() works on Windows,
+  // macOS, and Linux without relying on environment variables.
+  final docsDir = await getApplicationDocumentsDirectory();
+  final baseDir = Directory(p.join(docsDir.path, 'inviscan'));
 
   if (!await baseDir.exists()) {
     await baseDir.create(recursive: true);

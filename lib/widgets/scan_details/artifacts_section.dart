@@ -6,7 +6,7 @@ import 'fs_helpers.dart';
 
 class ArtifactsSection extends StatelessWidget {
   final Directory scanDir;
-  const ArtifactsSection({Key? key, required this.scanDir}) : super(key: key);
+  const ArtifactsSection({super.key, required this.scanDir});
 
   Future<List<FileSystemEntity>> _listTopArtifacts() async {
     if (!await scanDir.exists()) return [];
@@ -25,8 +25,9 @@ class ArtifactsSection extends StatelessWidget {
 
   Future<String> _readSmallText(File f, {int maxBytes = 200 * 1024}) async {
     final len = await f.length();
-    if (len > maxBytes)
-      return 'Arquivo grande (${len} bytes). Abra externamente.';
+    if (len > maxBytes) {
+      return 'Arquivo grande ($len bytes). Abra externamente.';
+    }
     return f.readAsString();
   }
 
@@ -75,7 +76,7 @@ class ArtifactsSection extends StatelessWidget {
                     ),
                     onTap: () async {
                       final content = await _readSmallText(f);
-                      // ignore: use_build_context_synchronously
+                      if (!context.mounted) return;
                       showDialog(
                         context: context,
                         builder:

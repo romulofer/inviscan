@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../../utils/binaries.dart';
@@ -17,14 +19,7 @@ Future<void> runGowitness({
 
   final targetsFile = File(p.join(scanDirectory.path, 'gowitness_targets.txt'));
   await targetsFile.writeAsString(activeSubdomains.join('\n'));
-  onLog?.call('[*] URLs ativas salvas em ${targetsFile.path}');
-
-  final dbPath = p.join(gowitnessDir.path, 'screenshots.db');
-  final dbFile = File(dbPath);
-  if (await dbFile.exists()) {
-    await dbFile.delete();
-    onLog?.call('[*] Banco de dados antigo removido: $dbPath');
-  }
+  onLog?.call('[+] URLs ativas salvas em ${targetsFile.path}');
 
   final gowitnessExec = binPath('gowitness');
 
@@ -38,31 +33,44 @@ Future<void> runGowitness({
   ];
 
   onLog?.call(
-    '[*] Executando gowitness com comando: $gowitnessExec ${args.join(' ')}',
+    '[*] Executando gowitness: $gowitnessExec ${args.join(' ')}',
   );
 
   try {
-    final result = await Process.run(
+    final process = await Process.start(
       gowitnessExec,
       args,
       runInShell: false,
       workingDirectory: scanDirectory.path,
     );
 
-    if (result.exitCode == 0) {
+    final outBuf = StringBuffer();
+    final errBuf = StringBuffer();
+
+    // Drain both streams concurrently to avoid pipe-buffer deadlocks.
+    final stdoutDone = process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(outBuf.writeln)
+        .asFuture<void>();
+
+    final stderrDone = process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(errBuf.writeln)
+        .asFuture<void>();
+
+    final code = await process.exitCode;
+    await Future.wait([stdoutDone, stderrDone]);
+
+    if (code == 0) {
       onLog?.call('[+] gowitness capturou screenshots com sucesso.');
-      final out =
-          (result.stdout is String)
-              ? result.stdout as String
-              : '${result.stdout}';
-      if (out.trim().isNotEmpty) onLog?.call(out.trim());
+      final out = outBuf.toString().trim();
+      if (out.isNotEmpty) onLog?.call(out);
     } else {
-      final err =
-          (result.stderr is String)
-              ? result.stderr as String
-              : '${result.stderr}';
-      onLog?.call('[-] gowitness terminou com erro (code ${result.exitCode}).');
-      if (err.trim().isNotEmpty) onLog?.call(err.trim());
+      onLog?.call('[-] gowitness terminou com erro (code $code).');
+      final err = errBuf.toString().trim();
+      if (err.isNotEmpty) onLog?.call(err);
     }
   } catch (e) {
     onLog?.call('[-] Falha ao executar gowitness: $e');

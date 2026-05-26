@@ -10,18 +10,28 @@ Future<void> openExternally(BuildContext context, FileSystemEntity e) async {
     } else if (Platform.isMacOS) {
       await Process.run('open', [dirToOpen]);
     } else if (Platform.isWindows) {
-      await Process.run('explorer', [dirToOpen]);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Abra manualmente pelo gerenciador de arquivos.'),
-        ),
+      // explorer.exe requires backslashes and does not accept forward slashes
+      // reliably when the path contains spaces.
+      await Process.run(
+        'explorer',
+        [dirToOpen.replaceAll('/', '\\')],
+        runInShell: false,
       );
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Abra manualmente pelo gerenciador de arquivos.'),
+          ),
+        );
+      }
     }
-  } catch (e) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Não foi possível abrir: $e')));
+  } catch (err) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Não foi possível abrir: $err')));
+    }
   }
 }
 

@@ -6,7 +6,7 @@ import 'fs_helpers.dart';
 
 class ScreenshotsSection extends StatelessWidget {
   final Directory scanDir;
-  const ScreenshotsSection({Key? key, required this.scanDir}) : super(key: key);
+  const ScreenshotsSection({super.key, required this.scanDir});
 
   Future<List<File>> _listScreenshots() async {
     final shotsDir = Directory(p.join(scanDir.path, 'gowitness')); // sua pasta

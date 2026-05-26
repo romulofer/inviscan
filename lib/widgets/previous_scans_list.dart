@@ -5,7 +5,7 @@ import '../repositories/scan_history_repository.dart';
 import '../screens/scan_details_screen.dart';
 
 class PreviousScansList extends StatefulWidget {
-  const PreviousScansList({Key? key, this.maxHeight = 420}) : super(key: key);
+  const PreviousScansList({super.key, this.maxHeight = 420});
   final double maxHeight;
 
   @override
@@ -107,6 +107,7 @@ class _PreviousScansListState extends State<PreviousScansList> {
                       await _repo.clear();
                       await _refresh();
                       if (!mounted) return;
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Histórico limpo.')),
                       );

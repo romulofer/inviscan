@@ -32,10 +32,12 @@ class ResultsScreen extends StatelessWidget {
       );
       await file.writeAsString(jsonString);
 
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Resultados exportados para: ${file.path}')),
       );
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao exportar resultados: $e')),
       );

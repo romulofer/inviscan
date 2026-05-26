@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import '../repositories/scan_history_repository.dart';
 import '../models/scan_record.dart';
@@ -10,6 +12,13 @@ import 'scan/gowitness_scan.dart';
 import 'scan/httprobe_scan.dart';
 import 'scan/subfinder_scan.dart';
 
+String _normalizeDomain(String input) {
+  var d = input.trim();
+  d = d.replaceAll(RegExp(r'^https?://', caseSensitive: false), '');
+  d = d.split('/').first;
+  return d;
+}
+
 class ScanService {
   Future<(Set<String>, List<String>)> scanDomainWithProgress(
     String domain, {
@@ -21,14 +30,6 @@ class ScanService {
     final Set<String> allSubdomains = {};
     final List<String> activeList = [];
     final startedAt = DateTime.now();
-
-    // Normaliza domínio (remove esquema e caminho)
-    String _normalizeDomain(String input) {
-      var d = input.trim();
-      d = d.replaceAll(RegExp(r'^https?://', caseSensitive: false), '');
-      d = d.split('/').first;
-      return d;
-    }
 
     final baseDomain = _normalizeDomain(domain);
 
@@ -49,19 +50,18 @@ class ScanService {
     onLog?.call('[+] assetfinder encontrou $assetfinderCount subdomínios.');
 
     // crt.sh
-    final crtshCount = await runCrtsh(
+    await runCrtsh(
       domain: baseDomain,
       accumulator: allSubdomains,
       onLog: onLog,
     );
-    onLog?.call('[+] crt.sh encontrou $crtshCount subdomínios.');
 
     // FFUF
     final ffufSubdomains = await runFfufSubdomainScan(baseDomain, onLog: onLog);
     allSubdomains.addAll(ffufSubdomains);
     onLog?.call('[+] ffuf adicionou ${ffufSubdomains.length} subdomínios.');
 
-    // httprobe (passe os hooks diretamente)
+    // httprobe
     final active = await runHttprobe(
       subdomains: allSubdomains,
       onLog: onLog,
@@ -75,13 +75,25 @@ class ScanService {
       '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
     );
 
-    // Salvando resultados (total/únicos/ativos). Aqui total==únicos porque o acumulador é Set.
+    // Save results to disk.
     final scanDir = await saveResults(
       allSubdomains,
-      allSubdomains.toSet(),
+      allSubdomains,
       activeList.toSet(),
       onLog: onLog,
     );
+
+    // Identify and persist juicy targets.
+    final juicyTargets = identifyJuicyTargets(activeList);
+    if (juicyTargets.isNotEmpty) {
+      try {
+        final juicyFile = File(p.join(scanDir.path, 'juicy_targets.txt'));
+        await juicyFile.writeAsString(juicyTargets.join('\n'));
+        onLog?.call('[+] Juicy targets salvos em: ${juicyFile.path}');
+      } catch (e) {
+        onLog?.call('[-] Falha ao salvar juicy targets: $e');
+      }
+    }
 
     // gowitness
     if (activeList.isNotEmpty) {
@@ -91,9 +103,6 @@ class ScanService {
         onLog: onLog,
       );
     }
-
-    // juicy targets
-    final juicyTargets = identifyJuicyTargets(activeList);
 
     onLog?.call('-----------------------------------------------------------');
     onLog?.call('[Resumo das descobertas]');

@@ -30,16 +30,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear'),
+        title: const Text('Escanear', overflow: TextOverflow.ellipsis),
+        titleSpacing: NavigationToolbar.kMiddleSpacing,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
+            tooltip: 'Configurações',
             onPressed: () {
               Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
+          // Explicit right padding so the icon isn't flush against the edge.
+          const SizedBox(width: 4),
         ],
       ),
       body: Padding(

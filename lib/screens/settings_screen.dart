@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -21,11 +21,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const _crtshCommandKey = 'crtsh_command';
   static const _assetfinderCommandKey = 'assetfinder_command';
 
+  // NOTE: The ffuf default omits -o so the scan service injects a
+  // cross-platform temp path automatically.  Users may add -o if they want
+  // to keep the raw JSON output.
   static const _defaultFfufCommand =
-      'ffuf -w lib/wordlists/ffuf/wordlist.txt -u http://FUZZ.DOMAIN -mc 200 -of json -o /tmp/ffuf_output.json';
+      'ffuf -w wordlists/ffuf/wordlist.txt -u http://FUZZ.DOMAIN -mc 200 -of json';
 
   static const _defaultSubfinderCommand =
-      'subfinder -d DOMAIN -silent -all -o /tmp/subfinder_subs.txt';
+      'subfinder -d DOMAIN -silent -all';
 
   static const _defaultGowitnessCommand =
       'gowitness file -s urls.txt -d screenshots --db screenshots.db';

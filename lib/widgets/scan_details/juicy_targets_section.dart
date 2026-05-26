@@ -8,8 +8,7 @@ import 'fs_helpers.dart';
 
 class JuicyTargetsSection extends StatelessWidget {
   final Directory scanDir;
-  const JuicyTargetsSection({Key? key, required this.scanDir})
-    : super(key: key);
+  const JuicyTargetsSection({super.key, required this.scanDir});
 
   Future<List<String>> _loadJuicyTargets() async {
     final jsonFile = File(p.join(scanDir.path, 'juicy_targets.json'));

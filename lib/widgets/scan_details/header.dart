@@ -3,7 +3,7 @@ import '../../models/scan_record.dart';
 
 class DetailsHeader extends StatelessWidget {
   final ScanRecord record;
-  const DetailsHeader({Key? key, required this.record}) : super(key: key);
+  const DetailsHeader({super.key, required this.record});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +39,7 @@ class DetailsHeader extends StatelessWidget {
   Widget _chip(BuildContext context, String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(999),
     ),
     child: Text(text, style: const TextStyle(fontSize: 12)),

@@ -10,7 +10,7 @@ import '../widgets/scan_details/artifacts_section.dart';
 
 class ScanDetailsScreen extends StatefulWidget {
   final ScanRecord record;
-  const ScanDetailsScreen({Key? key, required this.record}) : super(key: key);
+  const ScanDetailsScreen({super.key, required this.record});
 
   @override
   State<ScanDetailsScreen> createState() => _ScanDetailsScreenState();
@@ -31,7 +31,7 @@ class _ScanDetailsScreenState extends State<ScanDetailsScreen> {
           if (_scanDir != null)
             IconButton(
               tooltip: 'Abrir pasta',
-              onPressed: () => openExternally(context, _scanDir!),
+              onPressed: () => openExternally(context, _scanDir),
               icon: const Icon(Icons.folder_open),
             ),
         ],
@@ -42,11 +42,11 @@ class _ScanDetailsScreenState extends State<ScanDetailsScreen> {
           DetailsHeader(record: widget.record),
           const SizedBox(height: 12),
           if (_scanDir != null) ...[
-            JuicyTargetsSection(scanDir: _scanDir!),
+            JuicyTargetsSection(scanDir: _scanDir),
             const SizedBox(height: 12),
-            ScreenshotsSection(scanDir: _scanDir!),
+            ScreenshotsSection(scanDir: _scanDir),
             const SizedBox(height: 12),
-            ArtifactsSection(scanDir: _scanDir!),
+            ArtifactsSection(scanDir: _scanDir),
           ] else
             const Text('Sem diretório de saída para este scan.'),
         ],

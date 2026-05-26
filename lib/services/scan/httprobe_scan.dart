@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import '../../utils/binaries.dart';
@@ -21,7 +22,7 @@ Future<Set<String>> runHttprobe({
   }
 
   final exec = binPath('httprobe');
-  onLog?.call('[*] Iniciando verificação com httprobe… (${total} hosts)');
+  onLog?.call('[*] Iniciando verificação com httprobe… ($total hosts)');
   onStart?.call();
 
   Process process;
@@ -33,22 +34,26 @@ Future<Set<String>> runHttprobe({
     return active;
   }
 
-  final stdoutSub = process.stdout
+  final stderrBuf = StringBuffer();
+
+  // Drain stdout and stderr concurrently to avoid pipe-buffer deadlocks.
+  final stdoutDone = process.stdout
       .transform(utf8.decoder)
       .transform(const LineSplitter())
       .listen((line) {
         final url = line.trim();
-        if (url.isNotEmpty) {
-          active.add(url);
-        }
-      });
+        if (url.isNotEmpty) active.add(url);
+      })
+      .asFuture<void>();
 
-  final StringBuffer stderrBuf = StringBuffer();
-  final stderrSub = process.stderr
+  final stderrDone = process.stderr
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(stderrBuf.writeln);
+      .listen(stderrBuf.writeln)
+      .asFuture<void>();
 
+  // Write all hosts to stdin, then close it.
+  // Progress is reported as we feed hosts so the UI stays responsive.
   var current = 0;
   for (final host in subdomains) {
     process.stdin.writeln(host);
@@ -59,11 +64,10 @@ Future<Set<String>> runHttprobe({
   await process.stdin.close();
 
   final code = await process.exitCode;
-  await stdoutSub.cancel();
-  await stderrSub.cancel();
+  await Future.wait([stdoutDone, stderrDone]);
 
   if (code == 0) {
-    onLog?.call('[+] httprobe finalizado. Ativos: ${active.length}/${total}.');
+    onLog?.call('[+] httprobe finalizado. Ativos: ${active.length}/$total.');
   } else {
     onLog?.call('[-] httprobe terminou com erro (code $code).');
     final err = stderrBuf.toString().trim();

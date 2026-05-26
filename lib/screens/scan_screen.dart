@@ -3,22 +3,35 @@ import 'package:provider/provider.dart';
 import '../viewmodels/scan_viewmodel.dart';
 import '../utils/log_utils.dart';
 
-class ScanScreen extends StatelessWidget {
+class ScanScreen extends StatefulWidget {
   final String domain;
   const ScanScreen({super.key, required this.domain});
 
   @override
-  Widget build(BuildContext context) {
-    final viewModel = Provider.of<ScanViewModel>(context, listen: false);
+  State<ScanScreen> createState() => _ScanScreenState();
+}
 
+class _ScanScreenState extends State<ScanScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger the scan exactly once, after the first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      viewModel.scan(domain);
+      if (mounted) {
+        context.read<ScanViewModel>().scan(widget.domain);
+      }
     });
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Scan de subdomínios'),
+        title: const Text(
+          'Scan de subdomínios',
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -89,7 +102,7 @@ class ScanScreen extends StatelessWidget {
                                   : () => LogUtils.saveLogs(
                                     context,
                                     model.logs,
-                                    domain: domain,
+                                    domain: widget.domain,
                                   ),
                         ),
                       ],
