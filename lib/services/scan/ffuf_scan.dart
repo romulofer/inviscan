@@ -4,10 +4,12 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/binaries.dart';
 
 Future<Set<String>> runFfufSubdomainScan(
   String domain, {
+  required AppLocalizations l10n,
   void Function(String log)? onLog,
 }) async {
   final Set<String> foundSubdomains = {};
@@ -68,7 +70,7 @@ Future<Set<String>> runFfufSubdomainScan(
 
   final parts = tokenize(resolvedCommand);
   if (parts.isEmpty) {
-    onLog?.call('[-] Comando do FFUF vazio.');
+    onLog?.call(l10n.logFfufEmpty);
     return foundSubdomains;
   }
 
@@ -94,31 +96,27 @@ Future<Set<String>> runFfufSubdomainScan(
     args.addAll(['-of', 'json', '-o', outputPath]);
   }
 
-  onLog?.call(
-    '[*] Executando FFUF com o comando: $ffufExec ${args.join(' ')}',
-  );
+  onLog?.call(l10n.logFfufRunning('$ffufExec ${args.join(' ')}'));
 
   late ProcessResult proc;
   try {
     proc = await Process.run(ffufExec, args, runInShell: false);
   } catch (e) {
-    onLog?.call('[-] Falha ao iniciar FFUF: $e');
+    onLog?.call(l10n.logFfufStartFailed(e));
     return foundSubdomains;
   }
 
   if (proc.exitCode != 0) {
     final err =
         (proc.stderr is String) ? proc.stderr as String : '${proc.stderr}';
-    onLog?.call('[-] FFUF terminou com erro (code ${proc.exitCode}).');
+    onLog?.call(l10n.logFfufError(proc.exitCode));
     if (err.trim().isNotEmpty) onLog?.call(err.trim());
     return foundSubdomains;
   }
 
   final outFile = File(outputPath);
   if (!await outFile.exists()) {
-    onLog?.call(
-      '[-] Arquivo de saída do FFUF não encontrado em: ${outFile.path}',
-    );
+    onLog?.call(l10n.logFfufOutputNotFound(outFile.path));
     return foundSubdomains;
   }
 
@@ -144,9 +142,9 @@ Future<Set<String>> runFfufSubdomainScan(
       }
     }
 
-    onLog?.call('[+] FFUF encontrou ${foundSubdomains.length} subdomínios.');
+    onLog?.call(l10n.logFfufFound(foundSubdomains.length));
   } catch (e) {
-    onLog?.call('[-] Erro ao processar JSON do FFUF: $e');
+    onLog?.call(l10n.logFfufJsonError(e));
   }
 
   // Clean up the temp output file.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../viewmodels/scan_viewmodel.dart';
 import '../utils/log_utils.dart';
 
@@ -18,18 +19,22 @@ class _ScanScreenState extends State<ScanScreen> {
     // Trigger the scan exactly once, after the first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<ScanViewModel>().scan(widget.domain);
+        context.read<ScanViewModel>().scan(
+          widget.domain,
+          AppLocalizations.of(context),
+        );
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text(
-          'Scan de subdomínios',
+        title: Text(
+          l10n.scanSubdomainsTitle,
           overflow: TextOverflow.ellipsis,
         ),
         backgroundColor: Colors.deepPurple,
@@ -43,12 +48,13 @@ class _ScanScreenState extends State<ScanScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (model.isLoading) ...[
-                  const Center(
+                  Center(
                     child: Column(
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 12),
-                        Text('Escaneando...', style: TextStyle(fontSize: 16)),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(l10n.scanning,
+                            style: const TextStyle(fontSize: 16)),
                       ],
                     ),
                   ),
@@ -56,9 +62,9 @@ class _ScanScreenState extends State<ScanScreen> {
                 ],
                 if (model.isRunningHttprobe &&
                     model.httprobeProgress != null) ...[
-                  const Text(
-                    'Verificando com httprobe...',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.verifyingHttprobe,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
@@ -75,9 +81,9 @@ class _ScanScreenState extends State<ScanScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Log de execução:',
-                      style: TextStyle(
+                    Text(
+                      l10n.executionLog,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -85,7 +91,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     Row(
                       children: [
                         IconButton(
-                          tooltip: 'Copiar logs',
+                          tooltip: l10n.copyLogs,
                           icon: const Icon(Icons.copy, size: 20),
                           onPressed:
                               model.logs.isEmpty
@@ -94,7 +100,7 @@ class _ScanScreenState extends State<ScanScreen> {
                                       LogUtils.copyLogs(context, model.logs),
                         ),
                         IconButton(
-                          tooltip: 'Salvar logs em arquivo',
+                          tooltip: l10n.saveLogsToFile,
                           icon: const Icon(Icons.save_alt, size: 20),
                           onPressed:
                               model.logs.isEmpty

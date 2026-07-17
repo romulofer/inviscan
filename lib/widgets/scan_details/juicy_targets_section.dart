@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
+import '../../l10n/app_localizations.dart';
 import '../../utils/juicy_targets.dart';
 import 'fs_helpers.dart';
 
@@ -48,6 +49,7 @@ class JuicyTargetsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return FutureBuilder<List<String>>(
       future: _loadJuicyTargets(),
       builder: (context, snap) {
@@ -66,10 +68,10 @@ class JuicyTargetsSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Juicy Targets',
-                        style: TextStyle(
+                        l10n.juicyTargetsTitle,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -85,7 +87,7 @@ class JuicyTargetsSection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${juicy.length} encontrados',
+                        l10n.foundCount(juicy.length),
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
@@ -93,7 +95,7 @@ class JuicyTargetsSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 if (juicy.isEmpty)
-                  const Text('Nenhum alvo suculento identificado.')
+                  Text(l10n.noJuicyTargets)
                 else
                   ListView.separated(
                     shrinkWrap: true,
@@ -110,7 +112,7 @@ class JuicyTargetsSection extends StatelessWidget {
                           style: const TextStyle(fontFamily: 'monospace'),
                         ),
                         trailing: IconButton(
-                          tooltip: 'Abrir pasta do scan',
+                          tooltip: l10n.openScanFolder,
                           icon: const Icon(Icons.folder_open),
                           onPressed: () => openExternally(context, scanDir),
                         ),
@@ -119,12 +121,12 @@ class JuicyTargetsSection extends StatelessWidget {
                             context: context,
                             builder:
                                 (_) => AlertDialog(
-                                  title: const Text('Juicy Target'),
+                                  title: Text(l10n.juicyTargetDialogTitle),
                                   content: SelectableText(url),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('Fechar'),
+                                      child: Text(l10n.close),
                                     ),
                                   ],
                                 ),

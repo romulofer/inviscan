@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../../l10n/app_localizations.dart';
 import '../../utils/binaries.dart';
 
 Future<Set<String>> runHttprobe({
   required Set<String> subdomains,
+  required AppLocalizations l10n,
   void Function(String log)? onLog,
   void Function()? onStart,
   void Function(int current, int total)? onProgress,
@@ -14,7 +16,7 @@ Future<Set<String>> runHttprobe({
   final total = subdomains.length;
 
   if (total == 0) {
-    onLog?.call('[*] Nenhum subdomínio para verificar com httprobe.');
+    onLog?.call(l10n.logHttprobeNone);
     onStart?.call();
     onProgress?.call(0, 0);
     onEnd?.call();
@@ -22,14 +24,14 @@ Future<Set<String>> runHttprobe({
   }
 
   final exec = binPath('httprobe');
-  onLog?.call('[*] Iniciando verificação com httprobe… ($total hosts)');
+  onLog?.call(l10n.logHttprobeStarting(total));
   onStart?.call();
 
   Process process;
   try {
     process = await Process.start(exec, const [], runInShell: false);
   } catch (e) {
-    onLog?.call('[-] Falha ao iniciar httprobe: $e');
+    onLog?.call(l10n.logHttprobeStartFailed(e));
     onEnd?.call();
     return active;
   }
@@ -67,9 +69,9 @@ Future<Set<String>> runHttprobe({
   await Future.wait([stdoutDone, stderrDone]);
 
   if (code == 0) {
-    onLog?.call('[+] httprobe finalizado. Ativos: ${active.length}/$total.');
+    onLog?.call(l10n.logHttprobeDone(active.length, total));
   } else {
-    onLog?.call('[-] httprobe terminou com erro (code $code).');
+    onLog?.call(l10n.logHttprobeError(code));
     final err = stderrBuf.toString().trim();
     if (err.isNotEmpty) onLog?.call(err);
   }

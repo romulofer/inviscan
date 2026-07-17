@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
+import '../../l10n/app_localizations.dart';
 import 'fs_helpers.dart';
 
 class ArtifactsSection extends StatelessWidget {
@@ -23,10 +24,14 @@ class ArtifactsSection extends StatelessWidget {
     return all;
   }
 
-  Future<String> _readSmallText(File f, {int maxBytes = 200 * 1024}) async {
+  Future<String> _readSmallText(
+    AppLocalizations l10n,
+    File f, {
+    int maxBytes = 200 * 1024,
+  }) async {
     final len = await f.length();
     if (len > maxBytes) {
-      return 'Arquivo grande ($len bytes). Abra externamente.';
+      return l10n.largeFile(len);
     }
     return f.readAsString();
   }
@@ -39,6 +44,7 @@ class ArtifactsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return FutureBuilder<List<FileSystemEntity>>(
       future: _listTopArtifacts(),
       builder: (context, snap) {
@@ -56,9 +62,9 @@ class ArtifactsSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (texts.isNotEmpty) ...[
-              const Text(
-                'Arquivos de texto/JSON',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                l10n.textJsonFiles,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               ...texts.map((e) {
@@ -70,12 +76,12 @@ class ArtifactsSection extends StatelessWidget {
                     title: Text(name),
                     subtitle: Text(f.path),
                     trailing: IconButton(
-                      tooltip: 'Abrir pasta',
+                      tooltip: l10n.openFolder,
                       icon: const Icon(Icons.folder_open),
                       onPressed: () => openExternally(context, f),
                     ),
                     onTap: () async {
-                      final content = await _readSmallText(f);
+                      final content = await _readSmallText(l10n, f);
                       if (!context.mounted) return;
                       showDialog(
                         context: context,
@@ -88,7 +94,7 @@ class ArtifactsSection extends StatelessWidget {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text('Fechar'),
+                                  child: Text(l10n.close),
                                 ),
                               ],
                             ),
@@ -100,9 +106,9 @@ class ArtifactsSection extends StatelessWidget {
               const SizedBox(height: 16),
             ],
             if (others.isNotEmpty) ...[
-              const Text(
-                'Outros artefatos',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                l10n.otherArtifacts,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               ...others.map((e) {
@@ -113,7 +119,7 @@ class ArtifactsSection extends StatelessWidget {
                     title: Text(name),
                     subtitle: Text(e.path),
                     trailing: IconButton(
-                      tooltip: 'Abrir pasta',
+                      tooltip: l10n.openFolder,
                       icon: const Icon(Icons.folder_open),
                       onPressed: () => openExternally(context, e),
                     ),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
+import '../../l10n/app_localizations.dart';
 import 'fs_helpers.dart';
 
 class ScreenshotsSection extends StatelessWidget {
@@ -30,6 +31,7 @@ class ScreenshotsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return FutureBuilder<List<File>>(
       future: _listScreenshots(),
       builder: (context, snap) {
@@ -48,10 +50,10 @@ class ScreenshotsSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Screenshots (Gowitness)',
-                        style: TextStyle(
+                        l10n.screenshotsTitle,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -75,7 +77,7 @@ class ScreenshotsSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 if (shots.isEmpty)
-                  const Text('Nenhuma captura encontrada em /gowitness.')
+                  Text(l10n.noScreenshots)
                 else
                   GridView.builder(
                     shrinkWrap: true,
@@ -110,7 +112,7 @@ class ScreenshotsSection extends StatelessWidget {
                   child: TextButton.icon(
                     onPressed: () => openExternally(context, scanDir),
                     icon: const Icon(Icons.folder_open),
-                    label: const Text('Abrir pasta de screenshots'),
+                    label: Text(l10n.openScreenshotsFolder),
                   ),
                 ),
               ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
 
+import '../l10n/app_localizations.dart';
 import '../widgets/previous_scans_list.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,13 +29,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear', overflow: TextOverflow.ellipsis),
+        title: Text(l10n.homeTitle, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Configurações',
+            tooltip: l10n.settingsTitle,
             onPressed: () {
               Navigator.of(
                 context,
@@ -51,11 +53,11 @@ class _HomeScreenState extends State<HomeScreen> {
             TextField(
               controller: _urlTextController,
               decoration: InputDecoration(
-                labelText: 'Digite a url para iniciar o scan',
+                labelText: l10n.scanUrlLabel,
                 helperText: 'https://',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  tooltip: 'Limpar',
+                  tooltip: l10n.clearField,
                   onPressed: () => _urlTextController.clear(),
                   icon: const Icon(Icons.clear),
                 ),
@@ -66,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _iniciarScan,
-              child: const Text('Escanear'),
+              child: Text(l10n.scanButton),
             ),
             const SizedBox(height: 12),
             const Expanded(child: PreviousScansList()),

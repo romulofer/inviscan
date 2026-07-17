@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class LogUtils {
   static Color getLogColor(String log) {
@@ -17,9 +18,7 @@ class LogUtils {
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Logs copiados para a área de transferência'),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context).logsCopied)),
       );
     }
   }
@@ -31,9 +30,9 @@ class LogUtils {
   }) async {
     if (logs.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Sem logs para salvar')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).noLogsToSave)),
+        );
       }
       return;
     }
@@ -54,15 +53,19 @@ class LogUtils {
       final file = File('${logsDir.path}/scan_logs_${safeDomain}_$ts.txt');
       await file.writeAsString(logs.join('\n'));
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Logs salvos em: ${file.path}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).logsSavedAt(file.path)),
+          ),
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Falha ao salvar logs: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).saveLogsFailed(e)),
+          ),
+        );
       }
     }
   }

@@ -33,3 +33,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Localização gerada (regenerada por `flutter gen-l10n` / `pub get`)
+/lib/l10n/app_localizations*.dart

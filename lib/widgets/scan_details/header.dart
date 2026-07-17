@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/scan_record.dart';
 
 class DetailsHeader extends StatelessWidget {
@@ -7,6 +8,7 @@ class DetailsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -22,14 +24,14 @@ class DetailsHeader extends StatelessWidget {
               spacing: 12,
               runSpacing: 6,
               children: [
-                _chip(context, 'Status: ${record.status}'),
-                _chip(context, 'Início: ${record.startedAt}'),
-                _chip(context, 'Fim: ${record.finishedAt ?? '—'}'),
-                _chip(context, 'Subdomínios: ${record.subdomainsFound}'),
+                _chip(context, l10n.statusChip(record.status)),
+                _chip(context, l10n.startedChip('${record.startedAt}')),
+                _chip(context, l10n.finishedChip('${record.finishedAt ?? '—'}')),
+                _chip(context, l10n.subdomainsChip(record.subdomainsFound)),
               ],
             ),
             const SizedBox(height: 8),
-            SelectableText('Diretório: ${record.outputDir ?? '—'}'),
+            SelectableText(l10n.directoryLabel(record.outputDir ?? '—')),
           ],
         ),
       ),

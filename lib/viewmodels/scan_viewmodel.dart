@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../l10n/app_localizations.dart';
 import '../services/scan_service.dart';
 
 class ScanViewModel extends ChangeNotifier {
@@ -12,7 +13,7 @@ class ScanViewModel extends ChangeNotifier {
   bool isRunningHttprobe = false;
   double? httprobeProgress;
 
-  Future<void> scan(String domain) async {
+  Future<void> scan(String domain, AppLocalizations l10n) async {
     isLoading = true;
     logs = [];
     subdomains = [];
@@ -48,6 +49,7 @@ class ScanViewModel extends ChangeNotifier {
     try {
       final (all, activeList) = await _scanService.scanDomainWithProgress(
         domain,
+        l10n,
         onLog: handleLog,
         onHttprobeStart: handleHttprobeStart,
         onHttprobeProgress: handleHttprobeProgress,
@@ -58,7 +60,7 @@ class ScanViewModel extends ChangeNotifier {
       subdomains.sort();
       activeSubdomains = activeList;
     } catch (e) {
-      handleLog('[-] Erro: $e');
+      handleLog(l10n.errorGeneric(e));
     }
 
     isLoading = false;

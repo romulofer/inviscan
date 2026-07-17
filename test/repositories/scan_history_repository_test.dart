@@ -38,11 +38,11 @@ void main() {
   });
 
   group('ScanHistoryRepository', () {
-    test('getAll returns empty list on a fresh repo', () async {
+    test('getAll retorna lista vazia num repositório novo', () async {
       expect(await ScanHistoryRepository().getAll(), isEmpty);
     });
 
-    test('append stores a record', () async {
+    test('append armazena um registro', () async {
       final repo = ScanHistoryRepository();
       await repo.append(_record('1'));
       final all = await repo.getAll();
@@ -50,7 +50,7 @@ void main() {
       expect(all.first.id, '1');
     });
 
-    test('append inserts newest record at index 0', () async {
+    test('append insere o registro mais novo no índice 0', () async {
       final repo = ScanHistoryRepository();
       await repo.append(_record('first'));
       await repo.append(_record('second'));
@@ -59,7 +59,7 @@ void main() {
       expect(all[1].id, 'first');
     });
 
-    test('saveAll persists all fields correctly', () async {
+    test('saveAll persiste todos os campos corretamente', () async {
       final repo = ScanHistoryRepository();
       final r = ScanRecord(
         id: 'full',
@@ -78,7 +78,7 @@ void main() {
       expect(loaded.outputDir, '/tmp/out');
     });
 
-    test('removeById removes only the matching record', () async {
+    test('removeById remove apenas o registro correspondente', () async {
       final repo = ScanHistoryRepository();
       await repo.append(_record('keep'));
       await repo.append(_record('drop'));
@@ -88,14 +88,14 @@ void main() {
       expect(all.first.id, 'keep');
     });
 
-    test('removeById is a no-op for an unknown id', () async {
+    test('removeById não faz nada para um id desconhecido', () async {
       final repo = ScanHistoryRepository();
       await repo.append(_record('a'));
       await repo.removeById('nonexistent');
       expect((await repo.getAll()).length, 1);
     });
 
-    test('clear removes all records', () async {
+    test('clear remove todos os registros', () async {
       final repo = ScanHistoryRepository();
       await repo.append(_record('1'));
       await repo.append(_record('2'));
@@ -103,28 +103,28 @@ void main() {
       expect(await repo.getAll(), isEmpty);
     });
 
-    test('revision increments on append', () async {
+    test('revision incrementa no append', () async {
       final repo = ScanHistoryRepository();
       final before = ScanHistoryRepository.revision.value;
       await repo.append(_record('x'));
       expect(ScanHistoryRepository.revision.value, before + 1);
     });
 
-    test('revision increments on saveAll', () async {
+    test('revision incrementa no saveAll', () async {
       final repo = ScanHistoryRepository();
       final before = ScanHistoryRepository.revision.value;
       await repo.saveAll([]);
       expect(ScanHistoryRepository.revision.value, before + 1);
     });
 
-    test('revision increments on clear', () async {
+    test('revision incrementa no clear', () async {
       final repo = ScanHistoryRepository();
       final before = ScanHistoryRepository.revision.value;
       await repo.clear();
       expect(ScanHistoryRepository.revision.value, before + 1);
     });
 
-    test('data persists across separate repository instances', () async {
+    test('dados persistem entre instâncias separadas do repositório', () async {
       await ScanHistoryRepository().append(_record('persist'));
       final loaded = await ScanHistoryRepository().getAll();
       expect(loaded.first.id, 'persist');

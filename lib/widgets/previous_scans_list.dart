@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../models/scan_record.dart';
 import '../repositories/scan_history_repository.dart';
 import '../screens/scan_details_screen.dart';
@@ -61,6 +62,7 @@ class _PreviousScansListState extends State<PreviousScansList> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(top: 16),
       child: Padding(
@@ -69,36 +71,35 @@ class _PreviousScansListState extends State<PreviousScansList> {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Scans anteriores',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    l10n.previousScans,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Atualizar',
+                  tooltip: l10n.refresh,
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh),
                 ),
                 IconButton(
-                  tooltip: 'Limpar histórico',
+                  tooltip: l10n.clearHistory,
                   onPressed: () async {
                     final ok = await showDialog<bool>(
                       context: context,
                       builder:
                           (_) => AlertDialog(
-                            title: const Text('Limpar histórico?'),
-                            content: const Text(
-                              'Isso removerá todos os registros locais.',
-                            ),
+                            title: Text(l10n.clearHistoryQuestion),
+                            content: Text(l10n.clearHistoryConfirm),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
+                                child: Text(l10n.cancel),
                               ),
                               ElevatedButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Limpar'),
+                                child: Text(l10n.clearAction),
                               ),
                             ],
                           ),
@@ -109,7 +110,7 @@ class _PreviousScansListState extends State<PreviousScansList> {
                       if (!mounted) return;
                       // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Histórico limpo.')),
+                        SnackBar(content: Text(l10n.historyCleared)),
                       );
                     }
                   },
@@ -130,14 +131,14 @@ class _PreviousScansListState extends State<PreviousScansList> {
                 if (snap.hasError) {
                   return Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('Erro ao carregar histórico: ${snap.error}'),
+                    child: Text(l10n.loadHistoryError(snap.error!)),
                   );
                 }
                 final items = snap.data ?? [];
                 if (items.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Nenhum scan registrado ainda.'),
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(l10n.noScansYet),
                   );
                 }
 
@@ -157,7 +158,11 @@ class _PreviousScansListState extends State<PreviousScansList> {
                         leading: const Icon(Icons.search),
                         title: Text(r.domain),
                         subtitle: Text(
-                          'Início: $started  •  Fim: $finished\nSubdomínios: ${r.subdomainsFound}',
+                          l10n.scanListSubtitle(
+                            started,
+                            finished,
+                            r.subdomainsFound,
+                          ),
                         ),
                         isThreeLine: true,
                         trailing: _statusChip(r.status),
@@ -173,18 +178,18 @@ class _PreviousScansListState extends State<PreviousScansList> {
                             context: context,
                             builder:
                                 (_) => AlertDialog(
-                                  title: const Text('Remover este item?'),
-                                  content: Text('Domínio: ${r.domain}'),
+                                  title: Text(l10n.removeItemQuestion),
+                                  content: Text(l10n.domainLabel(r.domain)),
                                   actions: [
                                     TextButton(
                                       onPressed:
                                           () => Navigator.pop(context, false),
-                                      child: const Text('Cancelar'),
+                                      child: Text(l10n.cancel),
                                     ),
                                     ElevatedButton(
                                       onPressed:
                                           () => Navigator.pop(context, true),
-                                      child: const Text('Remover'),
+                                      child: Text(l10n.remove),
                                     ),
                                   ],
                                 ),

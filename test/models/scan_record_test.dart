@@ -16,7 +16,7 @@ void main() {
   );
 
   group('ScanRecord.toMap', () {
-    test('includes all fields', () {
+    test('inclui todos os campos', () {
       final m = full.toMap();
       expect(m['id'], 'abc-123');
       expect(m['domain'], 'example.com');
@@ -27,7 +27,7 @@ void main() {
       expect(m['outputDir'], '/tmp/scan');
     });
 
-    test('nullable fields serialise as null', () {
+    test('campos anuláveis serializam como null', () {
       final r = ScanRecord(
         id: 'x',
         domain: 'a.com',
@@ -42,7 +42,7 @@ void main() {
   });
 
   group('ScanRecord.fromMap', () {
-    test('round-trips all fields', () {
+    test('faz round-trip de todos os campos', () {
       final r = ScanRecord.fromMap(full.toMap());
       expect(r.id, full.id);
       expect(r.domain, full.domain);
@@ -53,7 +53,7 @@ void main() {
       expect(r.outputDir, full.outputDir);
     });
 
-    test('nullable fields survive null round-trip', () {
+    test('campos anuláveis sobrevivem ao round-trip com null', () {
       final r = ScanRecord.fromMap(full.toMap()
         ..['finishedAt'] = null
         ..['outputDir'] = null);
@@ -61,38 +61,38 @@ void main() {
       expect(r.outputDir, isNull);
     });
 
-    test('missing status defaults to "success"', () {
+    test('status ausente assume "success" por padrão', () {
       final m = full.toMap()..remove('status');
       expect(ScanRecord.fromMap(m).status, 'success');
     });
 
-    test('missing subdomainsFound defaults to 0', () {
+    test('subdomainsFound ausente assume 0 por padrão', () {
       final m = full.toMap()..remove('subdomainsFound');
       expect(ScanRecord.fromMap(m).subdomainsFound, 0);
     });
   });
 
   group('ScanRecord.listFromJson / listToJson', () {
-    test('round-trips a list of records', () {
+    test('faz round-trip de uma lista de registros', () {
       final json = ScanRecord.listToJson([full, full]);
       final decoded = ScanRecord.listFromJson(json);
       expect(decoded.length, 2);
       expect(decoded.first.id, full.id);
     });
 
-    test('empty string returns empty list', () {
+    test('string vazia retorna lista vazia', () {
       expect(ScanRecord.listFromJson(''), isEmpty);
     });
 
-    test('whitespace-only string returns empty list', () {
+    test('string só com espaços retorna lista vazia', () {
       expect(ScanRecord.listFromJson('   '), isEmpty);
     });
 
-    test('empty JSON array returns empty list', () {
+    test('array JSON vazio retorna lista vazia', () {
       expect(ScanRecord.listFromJson('[]'), isEmpty);
     });
 
-    test('listToJson of empty list produces valid empty array', () {
+    test('listToJson de lista vazia produz array vazio válido', () {
       expect(ScanRecord.listFromJson(ScanRecord.listToJson([])), isEmpty);
     });
   });

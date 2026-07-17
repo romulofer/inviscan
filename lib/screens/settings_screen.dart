@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../l10n/app_localizations.dart';
+import '../providers/locale_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -82,9 +86,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Comandos salvos.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).commandsSaved)),
+    );
     Navigator.pop(context);
   }
 
@@ -149,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             IconButton(
-              tooltip: 'Restaurar padrão',
+              tooltip: AppLocalizations.of(context).restoreDefault,
               onPressed: onReset,
               icon: const Icon(Icons.restore),
             ),
@@ -170,10 +174,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildLanguageSelector(AppLocalizations l10n) {
+    final current = context.watch<LocaleProvider>().locale.languageCode;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            l10n.languageLabel,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        DropdownButton<String>(
+          value: current,
+          onChanged: (code) {
+            if (code != null) {
+              context.read<LocaleProvider>().setLocale(Locale(code));
+            }
+          },
+          items: [
+            DropdownMenuItem(value: 'pt', child: Text(l10n.languagePortuguese)),
+            DropdownMenuItem(value: 'en', child: Text(l10n.languageEnglish)),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body:
           _loading
               ? const Center(child: CircularProgressIndicator())
@@ -181,41 +212,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 child: ListView(
                   children: [
+                    _buildLanguageSelector(l10n),
+                    const Divider(height: 32),
                     _buildCommandField(
-                      label: 'Comando do FFUF',
+                      label: l10n.ffufCommandLabel,
                       controller: _ffufCommandController,
                       onReset: _resetFfuf,
-                      helper:
-                          'Placeholders: FUZZ (posição do subdomínio) e DOMAIN (alvo).',
+                      helper: l10n.ffufCommandHelper,
                     ),
                     _buildCommandField(
-                      label: 'Comando do Subfinder',
+                      label: l10n.subfinderCommandLabel,
                       controller: _subfinderCommandController,
                       onReset: _resetSubfinder,
-                      helper: 'Placeholder: DOMAIN (alvo).',
+                      helper: l10n.domainPlaceholderHelper,
                     ),
                     _buildCommandField(
-                      label: 'Comando do Assetfinder',
+                      label: l10n.assetfinderCommandLabel,
                       controller: _assetfinderCommandController,
                       onReset: _resetAssetfinder,
-                      helper:
-                          'Placeholder: DOMAIN (alvo). Não possui -o nativo; use redireção (> arquivo) se quiser salvar.',
+                      helper: l10n.assetfinderCommandHelper,
                     ),
                     _buildCommandField(
-                      label: 'Comando do Gowitness',
+                      label: l10n.gowitnessCommandLabel,
                       controller: _gowitnessCommandController,
                       onReset: _resetGowitness,
                     ),
                     _buildCommandField(
-                      label: 'URL do CRT.sh',
+                      label: l10n.crtshCommandLabel,
                       controller: _crtshCommandController,
                       onReset: _resetCrtsh,
-                      helper:
-                          'Placeholder: DOMAIN (alvo). Use %25 para o caractere %.',
+                      helper: l10n.crtshCommandHelper,
                     ),
                     ElevatedButton(
                       onPressed: _saveCommands,
-                      child: const Text('Salvar tudo'),
+                      child: Text(l10n.saveAllButton),
                     ),
                   ],
                 ),

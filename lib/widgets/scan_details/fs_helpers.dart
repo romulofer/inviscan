@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 Future<void> openExternally(BuildContext context, FileSystemEntity e) async {
   final path = e.path;
@@ -20,17 +21,17 @@ Future<void> openExternally(BuildContext context, FileSystemEntity e) async {
     } else {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Abra manualmente pelo gerenciador de arquivos.'),
-          ),
+          SnackBar(content: Text(AppLocalizations.of(context).openManually)),
         );
       }
     }
   } catch (err) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Não foi possível abrir: $err')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).couldNotOpen(err)),
+        ),
+      );
     }
   }
 }

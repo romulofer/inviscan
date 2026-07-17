@@ -100,8 +100,12 @@ final juicyTerms = [
   "archive",
 ];
 
+// Casa cada termo apenas quando isolado como label de subdomínio, ou seja,
+// delimitado por não-alfanuméricos (`.`, `-`, `/`, `:`, início/fim). Evita
+// falsos positivos por substring — "api" não casa "rapidshare", "old" não
+// casa "gold", "ci" não casa "social".
 final juicyRegex = RegExp(
-  juicyTerms.map(RegExp.escape).join('|'),
+  '(?<![a-zA-Z0-9])(?:${juicyTerms.map(RegExp.escape).join('|')})(?![a-zA-Z0-9])',
   caseSensitive: false,
 );
 

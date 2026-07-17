@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+import '../l10n/app_localizations.dart';
 import '../repositories/scan_history_repository.dart';
 import '../models/scan_record.dart';
+import '../utils/input_validation.dart';
 import '../utils/juicy_targets.dart';
 import '../utils/save_results.dart';
 import 'scan/assetfinder_scan.dart';
@@ -12,16 +14,10 @@ import 'scan/gowitness_scan.dart';
 import 'scan/httprobe_scan.dart';
 import 'scan/subfinder_scan.dart';
 
-String _normalizeDomain(String input) {
-  var d = input.trim();
-  d = d.replaceAll(RegExp(r'^https?://', caseSensitive: false), '');
-  d = d.split('/').first;
-  return d;
-}
-
 class ScanService {
   Future<(Set<String>, List<String>)> scanDomainWithProgress(
-    String domain, {
+    String domain,
+    AppLocalizations l10n, {
     void Function(String log)? onLog,
     void Function()? onHttprobeStart,
     void Function(int current, int total)? onHttprobeProgress,
@@ -31,39 +27,47 @@ class ScanService {
     final List<String> activeList = [];
     final startedAt = DateTime.now();
 
-    final baseDomain = _normalizeDomain(domain);
+    // Valida e normaliza. Rejeita espaços, aspas e metacaracteres que
+    // permitiriam injeção de argumento no comando do ffuf (DOMAIN é
+    // interpolado numa string de comando e depois tokenizado por espaço).
+    final baseDomain = validateAndNormalizeDomain(domain);
 
     // Subfinder
     final subfinderCount = await runSubfinder(
       domain: baseDomain,
       accumulator: allSubdomains,
+      l10n: l10n,
       onLog: onLog,
     );
-    onLog?.call('[+] subfinder encontrou $subfinderCount subdomínios.');
+    onLog?.call(l10n.logSubfinderFound(subfinderCount));
 
     // Assetfinder
     final assetfinderCount = await runAssetfinder(
       domain: baseDomain,
       accumulator: allSubdomains,
+      l10n: l10n,
       onLog: onLog,
     );
-    onLog?.call('[+] assetfinder encontrou $assetfinderCount subdomínios.');
+    onLog?.call(l10n.logAssetfinderFound(assetfinderCount));
 
     // crt.sh
     await runCrtsh(
       domain: baseDomain,
       accumulator: allSubdomains,
+      l10n: l10n,
       onLog: onLog,
     );
 
     // FFUF
-    final ffufSubdomains = await runFfufSubdomainScan(baseDomain, onLog: onLog);
+    final ffufSubdomains =
+        await runFfufSubdomainScan(baseDomain, l10n: l10n, onLog: onLog);
     allSubdomains.addAll(ffufSubdomains);
-    onLog?.call('[+] ffuf adicionou ${ffufSubdomains.length} subdomínios.');
+    onLog?.call(l10n.logFfufAdded(ffufSubdomains.length));
 
     // httprobe
     final active = await runHttprobe(
       subdomains: allSubdomains,
+      l10n: l10n,
       onLog: onLog,
       onStart: onHttprobeStart,
       onProgress: onHttprobeProgress,
@@ -71,14 +75,13 @@ class ScanService {
     );
     activeList.addAll(active);
 
-    onLog?.call(
-      '[+] Total de subdomínios únicos encontrados: ${allSubdomains.length}',
-    );
+    onLog?.call(l10n.logTotalUnique(allSubdomains.length));
 
     // Save results to disk.
     final scanDir = await saveResults(
       allSubdomains,
       activeList.toSet(),
+      l10n: l10n,
       onLog: onLog,
     );
 
@@ -88,9 +91,9 @@ class ScanService {
       try {
         final juicyFile = File(p.join(scanDir.path, 'juicy_targets.txt'));
         await juicyFile.writeAsString(juicyTargets.join('\n'));
-        onLog?.call('[+] Juicy targets salvos em: ${juicyFile.path}');
+        onLog?.call(l10n.logJuicySaved(juicyFile.path));
       } catch (e) {
-        onLog?.call('[-] Falha ao salvar juicy targets: $e');
+        onLog?.call(l10n.logJuicySaveFailed(e));
       }
     }
 
@@ -99,21 +102,24 @@ class ScanService {
       await runGowitness(
         activeSubdomains: activeList,
         scanDirectory: scanDir,
+        l10n: l10n,
         onLog: onLog,
       );
     }
 
-    onLog?.call('-----------------------------------------------------------');
-    onLog?.call('[Resumo das descobertas]');
-    onLog?.call('-----------------------------------------------------------');
-    onLog?.call('→ Subdomínios únicos encontrados: ${allSubdomains.length}');
-    onLog?.call('→ Subdomínios ativos identificados: ${activeList.length}');
-    onLog?.call('→ Juicy Targets encontrados: ${juicyTargets.length}');
+    const divider =
+        '-----------------------------------------------------------';
+    onLog?.call(divider);
+    onLog?.call(l10n.logSummaryHeader);
+    onLog?.call(divider);
+    onLog?.call(l10n.logSummaryUnique(allSubdomains.length));
+    onLog?.call(l10n.logSummaryActive(activeList.length));
+    onLog?.call(l10n.logSummaryJuicy(juicyTargets.length));
     onLog?.call(
-      '→ Screenshots salvos: ${activeList.isNotEmpty ? 'Sim' : 'Não'}',
+      l10n.logSummaryScreenshots(activeList.isNotEmpty ? l10n.yes : l10n.no),
     );
-    onLog?.call('→ Diretório do scan: ${scanDir.path}');
-    onLog?.call('-----------------------------------------------------------');
+    onLog?.call(l10n.logSummaryDir(scanDir.path));
+    onLog?.call(divider);
 
     try {
       final repo = ScanHistoryRepository();
@@ -128,9 +134,9 @@ class ScanService {
           outputDir: scanDir.path,
         ),
       );
-      onLog?.call('[✓] Histórico atualizado.');
+      onLog?.call(l10n.logHistoryUpdated);
     } catch (e) {
-      onLog?.call('[-] Falha ao atualizar histórico: $e');
+      onLog?.call(l10n.logHistoryFailed(e));
     }
 
     return (allSubdomains, activeList);

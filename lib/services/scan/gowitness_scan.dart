@@ -2,15 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import '../../l10n/app_localizations.dart';
 import '../../utils/binaries.dart';
 
 Future<void> runGowitness({
   required List<String> activeSubdomains,
   required Directory scanDirectory,
+  required AppLocalizations l10n,
   void Function(String log)? onLog,
 }) async {
   if (activeSubdomains.isEmpty) {
-    onLog?.call('[*] Nenhum subdomínio ativo para capturar com gowitness.');
+    onLog?.call(l10n.logGowitnessNone);
     return;
   }
 
@@ -19,7 +21,7 @@ Future<void> runGowitness({
 
   final targetsFile = File(p.join(scanDirectory.path, 'gowitness_targets.txt'));
   await targetsFile.writeAsString(activeSubdomains.join('\n'));
-  onLog?.call('[+] URLs ativas salvas em ${targetsFile.path}');
+  onLog?.call(l10n.logGowitnessTargetsSaved(targetsFile.path));
 
   final gowitnessExec = binPath('gowitness');
 
@@ -33,9 +35,7 @@ Future<void> runGowitness({
     '--write-none',
   ];
 
-  onLog?.call(
-    '[*] Executando gowitness: $gowitnessExec ${args.join(' ')}',
-  );
+  onLog?.call(l10n.logGowitnessRunning('$gowitnessExec ${args.join(' ')}'));
 
   try {
     final process = await Process.start(
@@ -65,15 +65,15 @@ Future<void> runGowitness({
     await Future.wait([stdoutDone, stderrDone]);
 
     if (code == 0) {
-      onLog?.call('[+] gowitness capturou screenshots com sucesso.');
+      onLog?.call(l10n.logGowitnessSuccess);
       final out = outBuf.toString().trim();
       if (out.isNotEmpty) onLog?.call(out);
     } else {
-      onLog?.call('[-] gowitness terminou com erro (code $code).');
+      onLog?.call(l10n.logGowitnessError(code));
       final err = errBuf.toString().trim();
       if (err.isNotEmpty) onLog?.call(err);
     }
   } catch (e) {
-    onLog?.call('[-] Falha ao executar gowitness: $e');
+    onLog?.call(l10n.logGowitnessFailed(e));
   }
 }

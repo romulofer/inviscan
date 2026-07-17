@@ -2,10 +2,12 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../l10n/app_localizations.dart';
 
 Future<Directory> saveResults(
   Set<String> unique,
   Set<String> active, {
+  required AppLocalizations l10n,
   void Function(String log)? onLog,
 }) async {
   // Resolve a reliable base directory on every platform.
@@ -16,21 +18,21 @@ Future<Directory> saveResults(
 
   if (!await baseDir.exists()) {
     await baseDir.create(recursive: true);
-    onLog?.call('[+] Criado diretório base: ${baseDir.path}');
+    onLog?.call(l10n.logBaseDirCreated(baseDir.path));
   }
 
   final timestamp = DateFormat('ddMMyyyy_HHmmss').format(DateTime.now());
   final scanDir = Directory(p.join(baseDir.path, timestamp));
   await scanDir.create(recursive: true);
-  onLog?.call('[+] Criado diretório do scan: ${scanDir.path}');
+  onLog?.call(l10n.logScanDirCreated(scanDir.path));
 
   final uniquePath = p.join(scanDir.path, 'subdominios_unicos.txt');
   await File(uniquePath).writeAsString(unique.join('\n'));
-  onLog?.call('[+] Subdomínios únicos salvos em: $uniquePath');
+  onLog?.call(l10n.logUniqueSaved(uniquePath));
 
   final activePath = p.join(scanDir.path, 'subdominios_unicos_ativos.txt');
   await File(activePath).writeAsString(active.join('\n'));
-  onLog?.call('[+] Subdomínios ativos salvos em: $activePath');
+  onLog?.call(l10n.logActiveSaved(activePath));
 
   return scanDir;
 }

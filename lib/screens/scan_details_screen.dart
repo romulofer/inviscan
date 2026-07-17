@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/scan_record.dart';
 import '../widgets/scan_details/fs_helpers.dart';
 import '../widgets/scan_details/header.dart';
@@ -24,13 +25,14 @@ class _ScanDetailsScreenState extends State<ScanDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalhes do scan'),
+        title: Text(l10n.scanDetailsTitle),
         actions: [
           if (_scanDir != null)
             IconButton(
-              tooltip: 'Abrir pasta',
+              tooltip: l10n.openFolder,
               onPressed: () => openExternally(context, _scanDir),
               icon: const Icon(Icons.folder_open),
             ),
@@ -48,7 +50,7 @@ class _ScanDetailsScreenState extends State<ScanDetailsScreen> {
             const SizedBox(height: 12),
             ArtifactsSection(scanDir: _scanDir),
           ] else
-            const Text('Sem diretório de saída para este scan.'),
+            Text(l10n.noOutputDir),
         ],
       ),
     );

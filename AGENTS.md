@@ -1,5 +1,14 @@
 # AGENTS.md — InviScan
 
+## Agent Policy (MUST FOLLOW)
+
+These rules are mandatory for any AI agent working in this repository:
+
+- **AI agents must NOT be commit authors.** Do not set yourself as the git author or committer, and do not add `Co-Authored-By` trailers naming any AI. Commits must be authored by the human developer only. When you prepare changes, leave committing to the human, or if asked to commit, use the existing human git identity without any AI attribution.
+- **AI agents must NOT push upstream.** Never run `git push` (or any remote-mutating command) to a remote. Local commits and branches only; the human decides when to push.
+- Do not open pull requests, create/delete remote branches, or otherwise mutate remote state.
+- Local git operations (status, diff, log, add, local commit when explicitly requested) are permitted within the above constraints.
+
 ## Project Overview
 
 **InviScan** is a Flutter desktop/mobile application for subdomain reconnaissance used in penetration testing and bug bounty hunting. It provides a unified GUI over several open-source CLI security tools, orchestrates them sequentially, and persists results to disk.

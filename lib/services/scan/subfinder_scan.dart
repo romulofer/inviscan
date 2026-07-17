@@ -1,16 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../../l10n/app_localizations.dart';
 import '../../utils/binaries.dart';
 
 Future<int> runSubfinder({
   required String domain,
   required Set<String> accumulator,
+  required AppLocalizations l10n,
   void Function(String log)? onLog,
 }) async {
   final exec = binPath('subfinder');
   final args = ['-d', domain, '-silent', '-all'];
-  onLog?.call('[*] Executando subfinder: $exec ${args.join(' ')}');
+  onLog?.call(l10n.logSubfinderRunning('$exec ${args.join(' ')}'));
 
   final initialLen = accumulator.length;
 
@@ -39,12 +41,12 @@ Future<int> runSubfinder({
     await Future.wait([stdoutDone, stderrDone]);
 
     if (code != 0) {
-      onLog?.call('[-] subfinder terminou com erro (código $code).');
+      onLog?.call(l10n.logSubfinderError(code));
       final err = stderrBuf.toString().trim();
       if (err.isNotEmpty) onLog?.call(err);
     }
   } catch (e) {
-    onLog?.call('[-] Falha ao executar subfinder: $e');
+    onLog?.call(l10n.logSubfinderFailed(e));
   }
 
   final added = accumulator.length - initialLen;

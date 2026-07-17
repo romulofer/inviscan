@@ -1,16 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../../l10n/app_localizations.dart';
 import '../../utils/binaries.dart';
 
 Future<int> runAssetfinder({
   required String domain,
   required Set<String> accumulator,
+  required AppLocalizations l10n,
   void Function(String log)? onLog,
 }) async {
   final exec = binPath('assetfinder');
   final args = ['--subs-only', domain];
-  onLog?.call('[*] Executando assetfinder: $exec ${args.join(' ')}');
+  onLog?.call(l10n.logAssetfinderRunning('$exec ${args.join(' ')}'));
 
   final initialLen = accumulator.length;
 
@@ -39,12 +41,12 @@ Future<int> runAssetfinder({
     await Future.wait([stdoutDone, stderrDone]);
 
     if (code != 0) {
-      onLog?.call('[-] assetfinder terminou com erro (código $code).');
+      onLog?.call(l10n.logAssetfinderError(code));
       final err = stderrBuf.toString().trim();
       if (err.isNotEmpty) onLog?.call(err);
     }
   } catch (e) {
-    onLog?.call('[-] Falha ao executar assetfinder: $e');
+    onLog?.call(l10n.logAssetfinderFailed(e));
   }
 
   final added = accumulator.length - initialLen;

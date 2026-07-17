@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../l10n/app_localizations.dart';
+
 class ResultsScreen extends StatelessWidget {
   final Set<String> allSubdomains;
   final List<String> activeSubdomains;
@@ -34,22 +36,26 @@ class ResultsScreen extends StatelessWidget {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Resultados exportados para: ${file.path}')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).resultsExportedTo(file.path)),
+        ),
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao exportar resultados: $e')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).exportResultsError(e)),
+        ),
       );
     }
   }
 
-  Widget _buildSection(String title, List<String> items) {
+  Widget _buildSection(BuildContext context, String title, List<String> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$title (${items.length})',
+          AppLocalizations.of(context).sectionWithCount(title, items.length),
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
@@ -83,14 +89,15 @@ class ResultsScreen extends StatelessWidget {
     final active = activeSubdomains.toList()..sort();
     final juicy = juicyTargets.toList()..sort();
 
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Resultados do Scan'),
+        title: Text(l10n.resultsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: () => _exportResults(context),
-            tooltip: 'Exportar resultados como JSON',
+            tooltip: l10n.exportJson,
           ),
         ],
       ),
@@ -98,9 +105,9 @@ class ResultsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            _buildSection('Subdomínios encontrados', subdomains),
-            _buildSection('Subdomínios ativos', active),
-            _buildSection('Juicy Targets', juicy),
+            _buildSection(context, l10n.subdomainsFoundSection, subdomains),
+            _buildSection(context, l10n.activeSubdomainsSection, active),
+            _buildSection(context, l10n.juicyTargetsSection, juicy),
           ],
         ),
       ),
