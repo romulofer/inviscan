@@ -39,4 +39,3 @@ app.*.map.json
 
 # Backlog de trabalho para agentes de IA (não versionar)
 /AI_TODO.md
-/issues_reescritas.md
