@@ -36,3 +36,7 @@ app.*.map.json
 
 # Localização gerada (regenerada por `flutter gen-l10n` / `pub get`)
 /lib/l10n/app_localizations*.dart
+
+# Backlog de trabalho para agentes de IA (não versionar)
+/AI_TODO.md
+/issues_reescritas.md
