@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/locale_provider.dart';
 import 'screens/home_screen.dart';
+import 'services/tool_installer.dart';
 import 'viewmodels/scan_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Torna binários baixados resolvíveis pelo binPath (síncrono).
+  await ToolInstaller().registerBinDir();
   final localeProvider = LocaleProvider();
   await localeProvider.load();
   runApp(

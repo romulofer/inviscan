@@ -13,6 +13,7 @@ import 'scan/ffuf_scan.dart';
 import 'scan/gowitness_scan.dart';
 import 'scan/httprobe_scan.dart';
 import 'scan/subfinder_scan.dart';
+import 'tool_installer.dart';
 
 class ScanService {
   Future<(Set<String>, List<String>)> scanDomainWithProgress(
@@ -31,6 +32,24 @@ class ScanService {
     // permitiriam injeção de argumento no comando do ffuf (DOMAIN é
     // interpolado numa string de comando e depois tokenizado por espaço).
     final baseDomain = validateAndNormalizeDomain(domain);
+
+    // Garante que os binários existam antes de rodar. Baixa os faltantes das
+    // releases fixadas, reportando progresso no log da UI.
+    final installer = ToolInstaller();
+    final missing = await installer.missing();
+    if (missing.isNotEmpty) {
+      onLog?.call(l10n.logDownloadingTools(missing.join(', ')));
+      final errors = await installer.installMissing(
+        onProgress: (tool, received, total) {
+          if (total > 0 && received == total) {
+            onLog?.call(l10n.logToolDownloaded(tool));
+          }
+        },
+      );
+      for (final entry in errors.entries) {
+        onLog?.call(l10n.logToolDownloadFailed(entry.key, entry.value));
+      }
+    }
 
     // Subfinder
     final subfinderCount = await runSubfinder(
