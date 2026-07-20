@@ -203,5 +203,21 @@
   "no": "Não",
   "logHistoryUpdated": "[✓] Histórico atualizado.",
   "logHistoryFailed": "[-] Falha ao atualizar histórico: {error}",
-  "@logHistoryFailed": { "placeholders": { "error": { "type": "Object" } } }
+  "@logHistoryFailed": { "placeholders": { "error": { "type": "Object" } } },
+
+  "logDownloadingTools": "[*] Baixando ferramentas: {tools}",
+  "@logDownloadingTools": { "placeholders": { "tools": { "type": "String" } } },
+  "logToolDownloaded": "[+] {tool} baixado.",
+  "@logToolDownloaded": { "placeholders": { "tool": { "type": "String" } } },
+  "logToolDownloadFailed": "[-] Falha ao baixar {tool}: {error}",
+  "@logToolDownloadFailed": { "placeholders": { "tool": { "type": "String" }, "error": { "type": "Object" } } },
+
+  "toolsSectionTitle": "Ferramentas",
+  "downloadToolsSubtitle": "Baixar/atualizar binários das releases",
+  "downloadToolsStarting": "Iniciando...",
+  "downloadToolProgress": "{tool}: {percent}%",
+  "@downloadToolProgress": { "placeholders": { "tool": { "type": "String" }, "percent": { "type": "String" } } },
+  "downloadToolsDone": "Todas as ferramentas instaladas.",
+  "downloadToolsFailures": "Falhas: {tools}",
+  "@downloadToolsFailures": { "placeholders": { "tools": { "type": "String" } } }
 }

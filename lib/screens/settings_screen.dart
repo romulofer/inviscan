@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
+import '../services/tool_installer.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -243,6 +244,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onReset: _resetCrtsh,
                       helper: l10n.crtshCommandHelper,
                     ),
+                    const Divider(height: 32),
+                    const _ToolDownloadTile(),
+                    const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _saveCommands,
                       child: Text(l10n.saveAllButton),
@@ -250,6 +254,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
+    );
+  }
+}
+
+class _ToolDownloadTile extends StatefulWidget {
+  const _ToolDownloadTile();
+
+  @override
+  State<_ToolDownloadTile> createState() => _ToolDownloadTileState();
+}
+
+class _ToolDownloadTileState extends State<_ToolDownloadTile> {
+  bool _running = false;
+  String _status = '';
+
+  Future<void> _download() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _running = true;
+      _status = l10n.downloadToolsStarting;
+    });
+    final installer = ToolInstaller();
+    final errors = await installer.installAll(
+      onProgress: (tool, received, total) {
+        if (!mounted) return;
+        final pct =
+            total > 0 ? ((received / total) * 100).toStringAsFixed(0) : '?';
+        setState(() => _status = l10n.downloadToolProgress(tool, pct));
+      },
+    );
+    if (!mounted) return;
+    setState(() {
+      _running = false;
+      _status = errors.isEmpty
+          ? l10n.downloadToolsDone
+          : l10n.downloadToolsFailures(errors.keys.join(', '));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(l10n.toolsSectionTitle),
+      subtitle: Text(
+        _status.isEmpty ? l10n.downloadToolsSubtitle : _status,
+      ),
+      trailing: _running
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: _download,
+            ),
     );
   }
 }
