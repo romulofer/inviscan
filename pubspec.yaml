@@ -12,18 +12,20 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.9
   provider: ^6.1.5
   path: ^1.9.1
   intl: ^0.20.2
   shared_preferences: ^2.5.3
   path_provider: ^2.1.2
   uuid: ^4.5.1
+  archive: ^4.0.2
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   path_provider_platform_interface: ^2.1.2
   plugin_platform_interface: ^2.1.8
 

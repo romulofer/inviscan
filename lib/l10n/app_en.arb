@@ -150,5 +150,16 @@
   "yes": "Yes",
   "no": "No",
   "logHistoryUpdated": "[✓] History updated.",
-  "logHistoryFailed": "[-] Failed to update history: {error}"
+  "logHistoryFailed": "[-] Failed to update history: {error}",
+
+  "logDownloadingTools": "[*] Downloading tools: {tools}",
+  "logToolDownloaded": "[+] {tool} downloaded.",
+  "logToolDownloadFailed": "[-] Failed to download {tool}: {error}",
+
+  "toolsSectionTitle": "Tools",
+  "downloadToolsSubtitle": "Download/update binaries from releases",
+  "downloadToolsStarting": "Starting...",
+  "downloadToolProgress": "{tool}: {percent}%",
+  "downloadToolsDone": "All tools installed.",
+  "downloadToolsFailures": "Failures: {tools}"
 }
