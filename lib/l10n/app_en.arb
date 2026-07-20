@@ -78,6 +78,8 @@
   "subfinderCommandLabel": "Subfinder command",
   "assetfinderCommandLabel": "Assetfinder command",
   "gowitnessCommandLabel": "Gowitness command",
+  "chromePathLabel": "Chrome path (Gowitness)",
+  "chromePathHelper": "Optional. Path to the Chrome executable. Empty = auto-detect Chrome, with Edge as last resort.",
   "crtshCommandLabel": "CRT.sh URL",
   "ffufCommandHelper": "Placeholders: FUZZ (subdomain position) and DOMAIN (target).",
   "domainPlaceholderHelper": "Placeholder: DOMAIN (target).",
@@ -128,6 +130,8 @@
   "logGowitnessSuccess": "[+] gowitness captured screenshots successfully.",
   "logGowitnessError": "[-] gowitness exited with error (code {code}).",
   "logGowitnessFailed": "[-] Failed to run gowitness: {error}",
+  "logGowitnessNoBrowser": "[-] No browser (Chrome/Edge) found. Screenshots skipped. Set the Chrome path in Settings.",
+  "logGowitnessBrowser": "[*] Using browser: {path}",
 
   "logBaseDirCreated": "[+] Base directory created: {path}",
   "logScanDirCreated": "[+] Scan directory created: {path}",

@@ -106,3 +106,16 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Bundle the scan binaries and the ffuf wordlist next to the executable so that
+# `binPath()` (lib/utils/binaries.dart) and the ffuf wordlist lookup
+# (lib/services/scan/ffuf_scan.dart) resolve them in a packaged build. The
+# repository root is one level up from this windows/ source directory.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../binaries/windows"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/binaries"
+  USE_SOURCE_PERMISSIONS
+  COMPONENT Runtime)
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/wordlists"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  COMPONENT Runtime)

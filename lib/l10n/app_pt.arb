@@ -94,6 +94,8 @@
   "subfinderCommandLabel": "Comando do Subfinder",
   "assetfinderCommandLabel": "Comando do Assetfinder",
   "gowitnessCommandLabel": "Comando do Gowitness",
+  "chromePathLabel": "Caminho do Chrome (Gowitness)",
+  "chromePathHelper": "Opcional. Caminho do executável do Chrome. Vazio = detecta Chrome automaticamente e usa Edge como última opção.",
   "crtshCommandLabel": "URL do CRT.sh",
   "ffufCommandHelper": "Placeholders: FUZZ (posição do subdomínio) e DOMAIN (alvo).",
   "domainPlaceholderHelper": "Placeholder: DOMAIN (alvo).",
@@ -172,6 +174,9 @@
   "@logGowitnessError": { "placeholders": { "code": { "type": "int" } } },
   "logGowitnessFailed": "[-] Falha ao executar gowitness: {error}",
   "@logGowitnessFailed": { "placeholders": { "error": { "type": "Object" } } },
+  "logGowitnessNoBrowser": "[-] Nenhum navegador (Chrome/Edge) encontrado. Screenshots ignorados. Configure o caminho do Chrome em Configurações.",
+  "logGowitnessBrowser": "[*] Usando navegador: {path}",
+  "@logGowitnessBrowser": { "placeholders": { "path": { "type": "String" } } },
 
   "logBaseDirCreated": "[+] Criado diretório base: {path}",
   "@logBaseDirCreated": { "placeholders": { "path": { "type": "String" } } },

@@ -18,12 +18,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _gowitnessCommandController = TextEditingController();
   final _crtshCommandController = TextEditingController();
   final _assetfinderCommandController = TextEditingController();
+  final _chromePathController = TextEditingController();
 
   static const _ffufCommandKey = 'ffuf_command';
   static const _subfinderCommandKey = 'subfinder_command';
   static const _gowitnessCommandKey = 'gowitness_command';
   static const _crtshCommandKey = 'crtsh_command';
   static const _assetfinderCommandKey = 'assetfinder_command';
+  static const _chromePathKey = 'gowitness_chrome_path';
 
   // NOTE: The ffuf default omits -o so the scan service injects a
   // cross-platform temp path automatically.  Users may add -o if they want
@@ -62,6 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         prefs.getString(_crtshCommandKey) ?? _defaultCrtshCommand;
     _assetfinderCommandController.text =
         prefs.getString(_assetfinderCommandKey) ?? _defaultAssetfinderCommand;
+    _chromePathController.text = prefs.getString(_chromePathKey) ?? '';
     setState(() => _loading = false);
   }
 
@@ -84,6 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _assetfinderCommandKey,
       _assetfinderCommandController.text.trim(),
     );
+    await prefs.setString(_chromePathKey, _chromePathController.text.trim());
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -122,6 +126,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _assetfinderCommandController.text = _defaultAssetfinderCommand;
   }
 
+  Future<void> _resetChromePath() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_chromePathKey);
+    _chromePathController.text = '';
+  }
+
   @override
   void dispose() {
     _ffufCommandController.dispose();
@@ -129,6 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _gowitnessCommandController.dispose();
     _crtshCommandController.dispose();
     _assetfinderCommandController.dispose();
+    _chromePathController.dispose();
     super.dispose();
   }
 
@@ -236,6 +247,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       label: l10n.gowitnessCommandLabel,
                       controller: _gowitnessCommandController,
                       onReset: _resetGowitness,
+                    ),
+                    _buildCommandField(
+                      label: l10n.chromePathLabel,
+                      controller: _chromePathController,
+                      onReset: _resetChromePath,
+                      helper: l10n.chromePathHelper,
                     ),
                     _buildCommandField(
                       label: l10n.crtshCommandLabel,

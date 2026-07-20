@@ -2,8 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/binaries.dart';
+import '../../utils/browser.dart';
+
+/// SharedPreferences key holding the user-configured Chrome/Edge binary path.
+const gowitnessChromePathKey = 'gowitness_chrome_path';
 
 Future<void> runGowitness({
   required List<String> activeSubdomains,
@@ -15,6 +20,18 @@ Future<void> runGowitness({
     onLog?.call(l10n.logGowitnessNone);
     return;
   }
+
+  // gowitness drives a headless Chrome over CDP. Resolve a local browser
+  // (configured path → Chrome → Edge). If none is found, skip the step with a
+  // clear log instead of failing deep inside gowitness.
+  final prefs = await SharedPreferences.getInstance();
+  final configuredChrome = prefs.getString(gowitnessChromePathKey);
+  final browserPath = resolveBrowserPath(configuredChrome);
+  if (browserPath == null) {
+    onLog?.call(l10n.logGowitnessNoBrowser);
+    return;
+  }
+  onLog?.call(l10n.logGowitnessBrowser(browserPath));
 
   final gowitnessDir = Directory(p.join(scanDirectory.path, 'gowitness'));
   await gowitnessDir.create(recursive: true);
@@ -32,6 +49,8 @@ Future<void> runGowitness({
     targetsFile.path,
     '--screenshot-path',
     gowitnessDir.path,
+    '--chrome-path',
+    browserPath,
     '--write-none',
   ];
 
