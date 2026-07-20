@@ -107,15 +107,11 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
 
-# Bundle the scan binaries and the ffuf wordlist next to the executable so that
-# `binPath()` (lib/utils/binaries.dart) and the ffuf wordlist lookup
-# (lib/services/scan/ffuf_scan.dart) resolve them in a packaged build. The
-# repository root is one level up from this windows/ source directory.
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../binaries/windows"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/binaries"
-  USE_SOURCE_PERMISSIONS
-  COMPONENT Runtime)
-
+# Bundle the ffuf wordlist next to the executable so the ffuf wordlist lookup
+# (lib/services/scan/ffuf_scan.dart) resolves it in a packaged build. Scan
+# binaries are NOT bundled: they are downloaded at runtime from the official
+# releases (lib/services/tool_installer.dart, see kToolManifest windowsX64
+# assets). The repository root is one level up from this windows/ source dir.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/wordlists"
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
