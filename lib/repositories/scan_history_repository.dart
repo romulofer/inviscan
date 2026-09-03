@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,6 +8,22 @@ class ScanHistoryRepository {
   static const _fileName = 'scan_history.json';
 
   static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
+  /// Serializa mutações read-modify-write para evitar que escritas
+  /// concorrentes (append/remove simultâneos) sobrescrevam umas às outras.
+  static Future<void> _mutations = Future.value();
+
+  static Future<T> _synchronized<T>(Future<T> Function() action) {
+    final completer = Completer<T>();
+    _mutations = _mutations.then((_) async {
+      try {
+        completer.complete(await action());
+      } catch (e, st) {
+        completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
 
   Future<File> _historyFile() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -30,17 +47,17 @@ class ScanHistoryRepository {
     revision.value++;
   }
 
-  Future<void> append(ScanRecord record) async {
-    final list = await getAll();
-    list.insert(0, record);
-    await saveAll(list);
-  }
+  Future<void> append(ScanRecord record) => _synchronized(() async {
+        final list = await getAll();
+        list.insert(0, record);
+        await saveAll(list);
+      });
 
-  Future<void> removeById(String id) async {
-    final list = await getAll();
-    list.removeWhere((e) => e.id == id);
-    await saveAll(list);
-  }
+  Future<void> removeById(String id) => _synchronized(() async {
+        final list = await getAll();
+        list.removeWhere((e) => e.id == id);
+        await saveAll(list);
+      });
 
   Future<void> clear() async {
     final file = await _historyFile();

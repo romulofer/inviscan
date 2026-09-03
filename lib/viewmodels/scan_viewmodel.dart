@@ -14,6 +14,9 @@ class ScanViewModel extends ChangeNotifier {
   double? httprobeProgress;
 
   Future<void> scan(String domain, AppLocalizations l10n) async {
+    // Impede scans concorrentes: o ViewModel é compartilhado pelo app e um
+    // segundo scan corromperia o estado e dispararia processos em paralelo.
+    if (isLoading) return;
     isLoading = true;
     logs = [];
     subdomains = [];

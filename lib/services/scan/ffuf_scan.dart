@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/binaries.dart';
+import '../../utils/command_utils.dart';
 
 Future<Set<String>> runFfufSubdomainScan(
   String domain, {
@@ -40,42 +40,13 @@ Future<Set<String>> runFfufSubdomainScan(
 
   final resolvedCommand = savedCommand.replaceAll('DOMAIN', domain);
 
-  List<String> tokenize(String cmd) {
-    final List<String> out = [];
-    final StringBuffer current = StringBuffer();
-    bool inSingle = false, inDouble = false;
-
-    for (int i = 0; i < cmd.length; i++) {
-      final ch = cmd[i];
-      if (ch == "'" && !inDouble) {
-        inSingle = !inSingle;
-        continue;
-      }
-      if (ch == '"' && !inSingle) {
-        inDouble = !inDouble;
-        continue;
-      }
-      if (ch == ' ' && !inSingle && !inDouble) {
-        if (current.isNotEmpty) {
-          out.add(current.toString());
-          current.clear();
-        }
-      } else {
-        current.write(ch);
-      }
-    }
-    if (current.isNotEmpty) out.add(current.toString());
-    return out;
-  }
-
-  final parts = tokenize(resolvedCommand);
+  final parts = tokenizeCommand(resolvedCommand);
   if (parts.isEmpty) {
     onLog?.call(l10n.logFfufEmpty);
     return foundSubdomains;
   }
 
-  final exeToken = parts.first.toLowerCase();
-  final ffufExec = exeToken.contains('ffuf') ? binPath('ffuf') : parts.first;
+  final ffufExec = resolveExec(parts.first, 'ffuf');
 
   final args = <String>[];
   args.addAll(parts.skip(1));
@@ -137,7 +108,7 @@ Future<Set<String>> runFfufSubdomainScan(
               .replaceAll(RegExp(r'^https?://', caseSensitive: false), '')
               .split('/')
               .first;
-      if (host.endsWith(domain)) {
+      if (host == domain || host.endsWith('.$domain')) {
         foundSubdomains.add(host);
       }
     }

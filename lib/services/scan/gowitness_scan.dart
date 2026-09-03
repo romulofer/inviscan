@@ -2,8 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/binaries.dart';
+import '../../utils/command_utils.dart';
+
+/// Placeholders `TARGETS` (arquivo de alvos) e `SCREENSHOTS` (diretório de
+/// saída) são injetados em runtime — o app controla esses caminhos.
+const _defaultGowitnessCommand =
+    'gowitness scan file -f TARGETS --screenshot-path SCREENSHOTS --write-none';
 
 Future<void> runGowitness({
   required List<String> activeSubdomains,
@@ -23,17 +29,20 @@ Future<void> runGowitness({
   await targetsFile.writeAsString(activeSubdomains.join('\n'));
   onLog?.call(l10n.logGowitnessTargetsSaved(targetsFile.path));
 
-  final gowitnessExec = binPath('gowitness');
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString('gowitness_command') ?? _defaultGowitnessCommand;
+  final parts = tokenizeCommand(
+    saved
+        .replaceAll('TARGETS', targetsFile.path)
+        .replaceAll('SCREENSHOTS', gowitnessDir.path),
+  );
+  if (parts.isEmpty) {
+    onLog?.call(l10n.logGowitnessFailed('empty command'));
+    return;
+  }
 
-  final args = [
-    'scan',
-    'file',
-    '-f',
-    targetsFile.path,
-    '--screenshot-path',
-    gowitnessDir.path,
-    '--write-none',
-  ];
+  final gowitnessExec = resolveExec(parts.first, 'gowitness');
+  final args = parts.skip(1).toList();
 
   onLog?.call(l10n.logGowitnessRunning('$gowitnessExec ${args.join(' ')}'));
 

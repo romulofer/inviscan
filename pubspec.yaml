@@ -25,10 +25,27 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
   path_provider_platform_interface: ^2.1.2
   plugin_platform_interface: ^2.1.8
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
   generate: true
+
+# Ícone do app (fox no crosshair). Regenerar com:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+  windows:
+    generate: true
+  macos:
+    generate: true

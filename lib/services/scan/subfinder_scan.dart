@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/binaries.dart';
+import '../../utils/command_utils.dart';
+
+const _defaultSubfinderCommand = 'subfinder -d DOMAIN -silent -all';
 
 Future<int> runSubfinder({
   required String domain,
@@ -10,8 +13,13 @@ Future<int> runSubfinder({
   required AppLocalizations l10n,
   void Function(String log)? onLog,
 }) async {
-  final exec = binPath('subfinder');
-  final args = ['-d', domain, '-silent', '-all'];
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString('subfinder_command') ?? _defaultSubfinderCommand;
+  final parts = tokenizeCommand(saved.replaceAll('DOMAIN', domain));
+  if (parts.isEmpty) return 0;
+
+  final exec = resolveExec(parts.first, 'subfinder');
+  final args = parts.skip(1).toList();
   onLog?.call(l10n.logSubfinderRunning('$exec ${args.join(' ')}'));
 
   final initialLen = accumulator.length;

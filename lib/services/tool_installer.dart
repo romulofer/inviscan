@@ -33,10 +33,18 @@ class UnsupportedPlatformException implements Exception {
 class ToolInstaller {
   ToolInstaller({String? binDirOverride, HttpClient? httpClient})
       : _binDirOverride = binDirOverride,
-        _httpClient = httpClient ?? HttpClient();
+        _httpClient = httpClient ?? (HttpClient()
+          ..connectionTimeout = const Duration(seconds: 30));
 
   final String? _binDirOverride;
   final HttpClient _httpClient;
+
+  /// Teto de tamanho do download (bytes). Protege contra respostas gigantes ou
+  /// penduradas que estourariam a memória (o corpo é acumulado em memória).
+  static const int _maxDownloadBytes = 256 * 1024 * 1024;
+
+  /// Tempo máximo total para baixar um asset.
+  static const Duration _downloadTimeout = Duration(minutes: 5);
 
   /// Nome do arquivo do binário instalado (com `.exe` no Windows).
   String _installedName(String tool) =>
@@ -142,20 +150,34 @@ class ToolInstaller {
     String url,
     void Function(int received, int total)? onProgress,
   ) async {
-    final request = await _httpClient.getUrl(Uri.parse(url));
-    final response = await request.close();
-    if (response.statusCode != 200) {
-      throw HttpException('HTTP ${response.statusCode} ao baixar $url');
+    Future<Uint8List> run() async {
+      final request = await _httpClient.getUrl(Uri.parse(url));
+      final response = await request.close();
+      if (response.statusCode != 200) {
+        throw HttpException('HTTP ${response.statusCode} ao baixar $url');
+      }
+      final total = response.contentLength;
+      if (total > _maxDownloadBytes) {
+        throw HttpException(
+          'Asset excede o limite de ${_maxDownloadBytes ~/ (1024 * 1024)} MB: $url',
+        );
+      }
+      final builder = BytesBuilder(copy: false);
+      var received = 0;
+      await for (final chunk in response) {
+        received += chunk.length;
+        if (received > _maxDownloadBytes) {
+          throw HttpException(
+            'Asset excede o limite de ${_maxDownloadBytes ~/ (1024 * 1024)} MB: $url',
+          );
+        }
+        builder.add(chunk);
+        onProgress?.call(received, total);
+      }
+      return builder.toBytes();
     }
-    final total = response.contentLength;
-    final builder = BytesBuilder(copy: false);
-    var received = 0;
-    await for (final chunk in response) {
-      builder.add(chunk);
-      received += chunk.length;
-      onProgress?.call(received, total);
-    }
-    return builder.toBytes();
+
+    return run().timeout(_downloadTimeout);
   }
 
   /// Instala todas as ferramentas faltantes. Retorna erros por ferramenta.

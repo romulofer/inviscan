@@ -35,8 +35,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const _defaultSubfinderCommand =
       'subfinder -d DOMAIN -silent -all';
 
+  // TARGETS (arquivo de alvos) e SCREENSHOTS (diretório) são injetados em
+  // runtime pelo scan; o app controla esses caminhos.
   static const _defaultGowitnessCommand =
-      'gowitness file -s urls.txt -d screenshots --db screenshots.db';
+      'gowitness scan file -f TARGETS --screenshot-path SCREENSHOTS --write-none';
 
   static const _defaultCrtshCommand =
       'https://crt.sh/?q=%25.DOMAIN&exclude=expired';

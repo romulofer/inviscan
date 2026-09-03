@@ -3,6 +3,7 @@ import 'scan_screen.dart';
 import 'settings_screen.dart';
 
 import '../l10n/app_localizations.dart';
+import '../utils/input_validation.dart';
 import '../widgets/previous_scans_list.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,15 +17,24 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _urlTextController = TextEditingController();
 
   void _iniciarScan() {
-    final url = _urlTextController.text.trim().replaceFirst(
-      RegExp(r'^(https?:\/\/)?(www\.)?'),
-      '',
-    );
-    if (url.isNotEmpty) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (_) => ScanScreen(domain: url)));
+    final raw = _urlTextController.text.trim();
+    if (raw.isEmpty) return;
+
+    // Valida/normaliza antes de navegar para dar feedback imediato, em vez de
+    // falhar no meio do scan. O ScanService revalida por garantia.
+    final String domain;
+    try {
+      domain = validateAndNormalizeDomain(raw);
+    } on ArgumentError catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${e.message}')),
+      );
+      return;
     }
+
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => ScanScreen(domain: domain)));
   }
 
   @override

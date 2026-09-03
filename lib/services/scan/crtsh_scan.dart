@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
+
+const _defaultCrtshCommand = 'https://crt.sh/?q=%25.DOMAIN&exclude=expired';
 
 Future<int> runCrtsh({
   required String domain,
@@ -10,7 +13,15 @@ Future<int> runCrtsh({
   void Function(String log)? onLog,
 }) async {
   // Endpoint JSON é mais estável que raspar o HTML da tabela.
-  final url = Uri.parse('https://crt.sh/?q=%25.$domain&exclude=expired&output=json');
+  final prefs = await SharedPreferences.getInstance();
+  var urlStr =
+      (prefs.getString('crtsh_command') ?? _defaultCrtshCommand)
+          .replaceAll('DOMAIN', domain);
+  // Garante saída JSON, mesmo que o usuário não inclua o parâmetro.
+  if (!urlStr.contains('output=json')) {
+    urlStr += '${urlStr.contains('?') ? '&' : '?'}output=json';
+  }
+  final url = Uri.parse(urlStr);
   onLog?.call(l10n.logCrtshQuerying('$url'));
 
   final initialLen = accumulator.length;
