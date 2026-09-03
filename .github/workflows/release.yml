@@ -1,0 +1,94 @@
+name: release
+
+# Só constrói aqui o que NÃO roda na máquina local (Linux): Windows, macOS e
+# Linux arm64. Os artefatos Linux amd64 (.deb/.AppImage), o APK android e os
+# binários android das ferramentas são gerados e publicados localmente.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag do release (ex.: v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  # ---------------------------------------------------------------- Windows
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+      - run: flutter config --enable-windows-desktop
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Zip
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") { $ver = "${{ github.event.inputs.tag }}".TrimStart("v") }
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath "InviScan-$ver-windows-x64.zip"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: InviScan-*-windows-x64.zip
+
+  # ------------------------------------------------------------------ macOS
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+      - run: flutter config --enable-macos-desktop
+      - run: flutter pub get
+      - run: flutter build macos --release
+      - name: Zip .app
+        run: |
+          ver="${{ github.event.inputs.tag || github.ref_name }}"; ver="${ver#v}"
+          app=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)
+          ditto -c -k --sequesterRsrc --keepParent "$app" "InviScan-$ver-macos.zip"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: InviScan-*-macos.zip
+
+  # ------------------------------------------------------------ Linux arm64
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deps de build Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev dpkg-dev fakeroot wget
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+      - run: flutter config --enable-linux-desktop
+      - run: flutter pub get
+      - run: flutter build linux --release
+      - name: Empacota .deb + .AppImage (arm64)
+        run: |
+          ver="${{ github.event.inputs.tag || github.ref_name }}"; ver="${ver#v}"
+          bash packaging/linux/make_artifacts.sh arm64 "$ver"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: |
+            dist/inviscan_*_arm64.deb
+            dist/InviScan-*-aarch64.AppImage

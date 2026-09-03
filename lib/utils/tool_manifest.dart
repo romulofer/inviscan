@@ -10,6 +10,8 @@ class ToolAsset {
     required this.type,
     required this.sha256,
     this.pathInArchive,
+    this.repo,
+    this.tag,
   });
 
   /// Nome do arquivo na release (usado para montar a URL de download).
@@ -23,6 +25,14 @@ class ToolAsset {
 
   /// Caminho do binário dentro do arquivo. Nulo quando [type] é raw.
   final String? pathInArchive;
+
+  /// Sobrescreve o `owner/name` do [ToolSpec]. Usado quando o asset é hospedado
+  /// num repositório diferente do upstream (ex.: binários android compilados por
+  /// nós e publicados no release do InviScan).
+  final String? repo;
+
+  /// Sobrescreve a tag do [ToolSpec]. Ver [repo].
+  final String? tag;
 }
 
 /// Especificação de download de uma ferramenta, com versão fixada.
@@ -36,7 +46,7 @@ class ToolSpec {
   /// `owner/name` no GitHub.
   final String repo;
 
-  /// Tag da release fixada (ex.: `v2.14.0`).
+  /// Tag da release fixada (ex.: `v2.16.0`).
   final String tag;
 
   /// Asset por Abi. Abis ausentes = ferramenta indisponível naquela plataforma.
@@ -44,50 +54,76 @@ class ToolSpec {
 
   ToolAsset? assetForAbi(Abi abi) => assets[abi];
 
-  String downloadUrl(ToolAsset asset) =>
-      'https://github.com/$repo/releases/download/$tag/${asset.fileName}';
+  String downloadUrl(ToolAsset asset) {
+    final r = asset.repo ?? repo;
+    final t = asset.tag ?? tag;
+    return 'https://github.com/$r/releases/download/$t/${asset.fileName}';
+  }
 }
 
-/// Versões fixadas verificadas contra o GitHub em 2026-07-20.
+/// Repositório que hospeda os binários android compilados por nós.
+const String _androidHostRepo = 'romulofer/inviscan';
+
+/// Tag do release do InviScan que hospeda os binários android.
+const String _androidHostTag = 'v1.0.0';
+
+/// Versões fixadas verificadas contra o GitHub em 2026-09-03.
 ///
 /// Notas de arquitetura:
 /// - assetfinder v0.1.1 e httprobe v0.2 não publicam builds arm64; macOS arm64
 ///   usa o binário darwin amd64 (requer Rosetta em Apple Silicon) e linux arm64
 ///   fica sem asset.
+/// - Nenhuma das ferramentas publica build android upstream. Os assets
+///   `Abi.androidArm64` são compilados por nós (NDK, bionic PIE) e hospedados no
+///   release do InviScan ([_androidHostRepo]@[_androidHostTag]). gowitness fica
+///   de fora do android (depende de Chrome headless).
 const Map<String, ToolSpec> kToolManifest = {
   'subfinder': ToolSpec(
     repo: 'projectdiscovery/subfinder',
-    tag: 'v2.14.0',
+    tag: 'v2.16.0',
     assets: {
       Abi.linuxX64: ToolAsset(
-        fileName: 'subfinder_2.14.0_linux_amd64.zip',
+        fileName: 'subfinder_2.16.0_linux_amd64.zip',
         type: ArchiveType.zip,
         pathInArchive: 'subfinder',
-        sha256: '6529294788f56a20ed96a9b70e71f8f3c247f1d6104ba1e2c2e9e58d8a32c6cb',
+        sha256: '1b7f9c608e9a5bd59e609a5e09710d63c5485e92d3d49dc2c16eb4fdbe10cb60',
       ),
       Abi.linuxArm64: ToolAsset(
-        fileName: 'subfinder_2.14.0_linux_arm64.zip',
+        fileName: 'subfinder_2.16.0_linux_arm64.zip',
         type: ArchiveType.zip,
         pathInArchive: 'subfinder',
-        sha256: 'e3dc19f1e1b1f01840989e5d2501fd59069e3fd6fc2387ca78fbe246ef5e0680',
+        sha256: 'c81d49559c0f630177be9e347e502e7a3d474aacc6ff78291ffcb4964367d63d',
       ),
       Abi.macosX64: ToolAsset(
-        fileName: 'subfinder_2.14.0_macOS_amd64.zip',
+        fileName: 'subfinder_2.16.0_macOS_amd64.zip',
         type: ArchiveType.zip,
         pathInArchive: 'subfinder',
-        sha256: 'f419cf27f8d04ec7de967e9661767908caf1905636276c6c05916b19027c1959',
+        sha256: '8300c4d98f75596b7e8460ba6f3322dfeda4674bc2bcbde14d61d098db260b50',
       ),
       Abi.macosArm64: ToolAsset(
-        fileName: 'subfinder_2.14.0_macOS_arm64.zip',
+        fileName: 'subfinder_2.16.0_macOS_arm64.zip',
         type: ArchiveType.zip,
         pathInArchive: 'subfinder',
-        sha256: '622a711bf0dfd4aab5b0f6f1f5efe0d6d20fb75734f947a34a7f8ef1348f5435',
+        sha256: 'af55827c9e6cdc530cca377ad459214ead16daf1b79d90e3dcefa387f644e057',
       ),
       Abi.windowsX64: ToolAsset(
-        fileName: 'subfinder_2.14.0_windows_amd64.zip',
+        fileName: 'subfinder_2.16.0_windows_amd64.zip',
         type: ArchiveType.zip,
         pathInArchive: 'subfinder.exe',
-        sha256: '84e8a01d3d062484bb0958445e635a5773b6671566407fb4ab48417391539681',
+        sha256: 'ef760f0a064c22811100c75a61da35ba73d71398cb99ae85d32d0eed44496ab8',
+      ),
+      Abi.windowsArm64: ToolAsset(
+        fileName: 'subfinder_2.16.0_windows_arm64.zip',
+        type: ArchiveType.zip,
+        pathInArchive: 'subfinder.exe',
+        sha256: '442ab5a802953035767cddafc05a988df9625249e5695af9ee3a4d731c7ff60b',
+      ),
+      Abi.androidArm64: ToolAsset(
+        fileName: 'subfinder-android-arm64',
+        type: ArchiveType.raw,
+        sha256: '5913e1dc07655bd03b8b169bea9a4da96086c8261d6b2c3e3b8a2edf33904145',
+        repo: _androidHostRepo,
+        tag: _androidHostTag,
       ),
     },
   ),
@@ -118,6 +154,13 @@ const Map<String, ToolSpec> kToolManifest = {
         type: ArchiveType.zip,
         pathInArchive: 'assetfinder.exe',
         sha256: '39ce07c5e86995af83ddc36ed6bd4f7d2bf40497a85cc08ed8b94a6cad566cd3',
+      ),
+      Abi.androidArm64: ToolAsset(
+        fileName: 'assetfinder-android-arm64',
+        type: ArchiveType.raw,
+        sha256: '75089f645ba46997c26e8ec7c95077565af8c1d42a7678255218d0f0472afa73',
+        repo: _androidHostRepo,
+        tag: _androidHostTag,
       ),
     },
   ),
@@ -155,6 +198,19 @@ const Map<String, ToolSpec> kToolManifest = {
         pathInArchive: 'ffuf.exe',
         sha256: '717e3d103ee36ce743a18605be66a4424fca27758eebed1e8ebb2eb0a3645589',
       ),
+      Abi.windowsArm64: ToolAsset(
+        fileName: 'ffuf_2.2.1_windows_arm64.zip',
+        type: ArchiveType.zip,
+        pathInArchive: 'ffuf.exe',
+        sha256: 'a1a4e9005143e11c8a79f6ae0d0b24b67e54209b8b4f4736399211ebbc7a0b71',
+      ),
+      Abi.androidArm64: ToolAsset(
+        fileName: 'ffuf-android-arm64',
+        type: ArchiveType.raw,
+        sha256: '870d5d247fe3a8d4422eaf7c9eada5399eb0a367a543f07464b7e24c5aeae3a8',
+        repo: _androidHostRepo,
+        tag: _androidHostTag,
+      ),
     },
   ),
   'httprobe': ToolSpec(
@@ -184,6 +240,13 @@ const Map<String, ToolSpec> kToolManifest = {
         type: ArchiveType.zip,
         pathInArchive: 'httprobe.exe',
         sha256: 'f16baf121e6ac00584eb740da2e8179590ca9beb8970c4e3374224405c6b5989',
+      ),
+      Abi.androidArm64: ToolAsset(
+        fileName: 'httprobe-android-arm64',
+        type: ArchiveType.raw,
+        sha256: '5c7714b3b9c8e94a9bef8f979377191128257f822fc1c3ed0b7eddcd9d8bf24b',
+        repo: _androidHostRepo,
+        tag: _androidHostTag,
       ),
     },
   ),
@@ -215,6 +278,11 @@ const Map<String, ToolSpec> kToolManifest = {
         fileName: 'gowitness-3.1.1-windows-amd64.exe',
         type: ArchiveType.raw,
         sha256: '26ea2da2d7d4ef04e60289c94ecfd43692d6eca3723cfe318a03bda7a43f9374',
+      ),
+      Abi.windowsArm64: ToolAsset(
+        fileName: 'gowitness-3.1.1-windows-arm64.exe',
+        type: ArchiveType.raw,
+        sha256: '25291cc90e5d38bce857ea6d6a9ddb5d18204a752862c8572b4da1bfa1a19e74',
       ),
     },
   ),

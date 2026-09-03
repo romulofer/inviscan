@@ -43,3 +43,6 @@ docs/superpowers
 
 # Binários baixados em runtime (não versionar)
 /binaries/
+
+# Artefatos de release gerados localmente (deb/AppImage/APK/tools android)
+/dist/
