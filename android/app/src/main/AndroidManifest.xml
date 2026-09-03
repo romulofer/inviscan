@@ -1,8 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ferramentas de recon fazem requisições de rede; crt.sh via HttpClient. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="inviscan"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:extractNativeLibs="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

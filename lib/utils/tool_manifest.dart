@@ -61,6 +61,11 @@ class ToolSpec {
   }
 }
 
+/// Ferramentas sem suporte no Android. No Android as ferramentas são
+/// empacotadas no APK (jniLibs), não baixadas; gowitness fica de fora por
+/// depender de Chrome headless.
+const Set<String> kAndroidUnsupportedTools = {'gowitness'};
+
 /// Repositório que hospeda os binários android compilados por nós.
 const String _androidHostRepo = 'romulofer/inviscan';
 

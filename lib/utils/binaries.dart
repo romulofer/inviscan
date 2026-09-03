@@ -16,6 +16,23 @@ String? _downloadedBinDir;
 /// Define o diretório dos binários baixados. `null` limpa (usado em testes).
 void setDownloadedBinDir(String? path) => _downloadedBinDir = path;
 
+/// `nativeLibraryDir` do app Android, onde as ferramentas são empacotadas como
+/// `lib<tool>.so` (jniLibs). É o único local executável no Android 10+ — storage
+/// gravável do app tem `noexec`. Injetado no startup via MethodChannel.
+String? _androidNativeLibDir;
+
+/// Define o `nativeLibraryDir` do Android. `null` limpa (usado em testes).
+void setAndroidNativeLibDir(String? path) => _androidNativeLibDir = path;
+
+/// Caminho da ferramenta empacotada como `lib<baseName>.so` no
+/// `nativeLibraryDir`, ou `null` se não existir / fora do Android.
+String? androidBundledPath(String baseName) {
+  final dir = _androidNativeLibDir;
+  if (dir == null) return null;
+  final f = File(p.join(dir, 'lib$baseName.so'));
+  return f.existsSync() ? f.path : null;
+}
+
 /// Returns the path to a bundled binary, falling back to the bare name so the
 /// OS can resolve it from PATH when the binary is not bundled.
 String binPath(String baseName) {
@@ -25,6 +42,12 @@ String binPath(String baseName) {
       baseName.endsWith('.bat') ||
       baseName.endsWith('.py');
   final fileName = hasOwnExt ? baseName : '$baseName${_ext()}';
+
+  // Android: só executa a partir do nativeLibraryDir (lib<tool>.so).
+  if (Platform.isAndroid) {
+    final bundled = androidBundledPath(baseName);
+    if (bundled != null) return bundled;
+  }
 
   // Prioridade máxima: binário baixado em runtime para a plataforma+arch atual.
   final downloadedDir = _downloadedBinDir;

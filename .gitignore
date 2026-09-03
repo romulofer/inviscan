@@ -46,3 +46,6 @@ docs/superpowers
 
 # Artefatos de release gerados localmente (deb/AppImage/APK/tools android)
 /dist/
+
+# Ferramentas android empacotadas (geradas por tool/build_android_tools.sh)
+/android/app/src/main/jniLibs/

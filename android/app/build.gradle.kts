@@ -40,6 +40,21 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        jniLibs {
+            // Extrai as ferramentas (lib<tool>.so) para o nativeLibraryDir, onde
+            // são executáveis. Sem isto o AGP mantém as libs comprimidas no APK.
+            useLegacyPackaging = true
+            // Binários Go já stripados; não deixar o NDK re-stripar (corromperia).
+            keepDebugSymbols += setOf(
+                "**/libsubfinder.so",
+                "**/libffuf.so",
+                "**/libassetfinder.so",
+                "**/libhttprobe.so",
+            )
+        }
+    }
 }
 
 flutter {

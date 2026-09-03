@@ -61,16 +61,22 @@ class ToolInstaller {
     return dir.path;
   }
 
-  /// Path do binário se já instalado, senão `null`.
+  /// Path do binário se já instalado, senão `null`. No Android, as ferramentas
+  /// vêm empacotadas no APK (nativeLibraryDir); não há download.
   Future<String?> resolve(String tool) async {
+    if (Platform.isAndroid) return androidBundledPath(tool);
     final path = p.join(await binDir(), _installedName(tool));
     return File(path).existsSync() ? path : null;
   }
 
-  /// Ferramentas do manifesto ainda não instaladas.
+  /// Ferramentas do manifesto ainda não instaladas. No Android só considera as
+  /// empacotáveis: [kAndroidUnsupportedTools] (ex.: gowitness) são ignoradas.
   Future<List<String>> missing() async {
     final result = <String>[];
     for (final tool in kToolManifest.keys) {
+      if (Platform.isAndroid && kAndroidUnsupportedTools.contains(tool)) {
+        continue;
+      }
       if (await resolve(tool) == null) result.add(tool);
     }
     return result;
@@ -198,10 +204,12 @@ class ToolInstaller {
     return errors;
   }
 
-  /// Re-baixa todas as ferramentas (usado pelo botão "Atualizar").
+  /// Re-baixa todas as ferramentas (usado pelo botão "Atualizar"). No Android
+  /// não há o que baixar: as ferramentas vêm empacotadas no APK.
   Future<Map<String, Object>> installAll({
     void Function(String tool, int received, int total)? onProgress,
   }) async {
+    if (Platform.isAndroid) return {};
     final errors = <String, Object>{};
     for (final tool in kToolManifest.keys) {
       try {
