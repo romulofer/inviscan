@@ -543,3 +543,9 @@ This tool was developed for educational purposes and authorized security testing
 ---
 
 **Developed with ❤️ using Flutter**
+
+## ☕ Support
+
+If you find this project useful, consider supporting its development:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-legendaryredfox-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/legendaryredfox)
